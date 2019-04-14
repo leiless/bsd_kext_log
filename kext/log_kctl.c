@@ -115,6 +115,7 @@ static int enqueue_log(struct kextlog_msghdr *msgp, size_t len)
         msgp->flags |= KEXTLOG_FLAG_MSG_DROPPED;
     }
 
+    /* Message buffer's `\0' will also push into user space */
     e = ctl_enqueuedata(kctlref, kctlunit, msgp, len, 0);
     if (e != 0) {
         last_dropped = 1;   /* Prepare for incoming logs */
@@ -183,10 +184,10 @@ out_overflow:
         }
     }
 
-    msgp->size = len + 1;
     msgp->level = level;
     msgp->flags = flags;
     msgp->timestamp = mach_absolute_time();
+    msgp->size = len + 1;
 
     if (enqueue_log(msgp, msgsz) != 0) {
 out_vprintf:

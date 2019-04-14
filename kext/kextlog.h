@@ -20,11 +20,11 @@
 #define KEXTLOG_FLAG_MSG_TRUNCATED  0x2
 
 struct kextlog_msghdr {
-    uint32_t size;          /* Size of message buffer */
-
     uint32_t level;
     uint32_t flags;
     uint64_t timestamp;     /* always be mach_absolute_time() */
+
+    uint32_t size;          /* Size of message buffer */
 
     /*
      * Zero size must be given to silence
