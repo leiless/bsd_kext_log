@@ -117,13 +117,14 @@ static int enqueue_log(struct kextlog_msghdr *msgp, size_t len)
 
     /* Message buffer's `\0' will also push into user space */
     e = ctl_enqueuedata(kctlref, kctlunit, msgp, len, 0);
-    if (e != 0) {
-        last_dropped = 1;   /* Prepare for incoming logs */
-        LOG_ERR("ctl_enqueuedata() fail  ref: %p unit: %u len: %zu errno: %d", ref, unit, len, e);
-    }
+    if (e != 0) last_dropped = 1;
 
     ok = OSCompareAndSwap(1, 0, &spin_lock);
     kassertf(ok, "OSCompareAndSwap() 1 to 0 fail  val: %#x", spin_lock);
+
+    if (e != 0) {
+        LOG_ERR("ctl_enqueuedata() fail  ref: %p unit: %u len: %zu errno: %d", ref, unit, len, e);
+    }
 
     return e;
 }
