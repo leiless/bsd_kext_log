@@ -7,8 +7,7 @@
 
 #include <stdint.h>
 
-#define KEXTLOG_FLAG_MSG_DROPPED    0x1
-#define KEXTLOG_FLAG_MSG_TRUNCATED  0x2
+#define SOCKMSG_TYPE_KEXTLOG        1
 
 #define KEXTLOG_LEVEL_INFO          0
 #define KEXTLOG_LEVEL_DEBUG         1
@@ -16,9 +15,24 @@
 #define KEXTLOG_LEVEL_ERROR         3
 #define KEXTLOG_LEVEL_TRACE         4
 
+/*
+ * Indicate direct-previous messages dropped due to failure
+ */
+#define KEXTLOG_FLAG_MSG_DROPPED    0x1
+#define KEXTLOG_FLAG_MSG_TRUNCATED  0x2
+
+/* struct to feed read(2) */
+struct sock_msghdr {
+    uint8_t type;           /* Should never be zero */
+    uint32_t size;
+    char payload[0];
+};
+
 struct kextlog_msghdr {
-    uint32_t flags;
+    struct sock_msghdr hdr;
+
     uint32_t level;
+    uint32_t flags;
     uint64_t timestamp;     /* always be mach_absolute_time() */
 
     /*

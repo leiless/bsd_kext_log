@@ -5,6 +5,7 @@
 #include <sys/systm.h>
 #include <sys/errno.h>
 #include <libkern/OSAtomic.h>
+#include <mach/mach_time.h>
 
 #include "log_kctl.h"
 #include "utils.h"
@@ -94,10 +95,40 @@ errno_t log_kctl_deregister(void)
     return e;
 }
 
+static int enqueue_log(struct kextlog_msghdr *msgp, size_t len)
+{
+    static uint8_t last_dropped = 0;
+    static volatile uint32_t spin_lock = 0;
+
+    kern_ctl_ref ref = kctlref;
+    u_int32_t unit = kctlunit;
+    errno_t e;
+    Boolean ok;
+
+    kassert_nonnull(msgp);
+
+    /* TODO: use mutex instead of busy spin lock */
+    while (!OSCompareAndSwap(0, 1, &spin_lock)) continue;
+
+    if (last_dropped) {
+        last_dropped = 0;
+        msgp->flags |= KEXTLOG_FLAG_MSG_DROPPED;
+    }
+
+    e = ctl_enqueuedata(kctlref, kctlunit, msgp, len, 0);
+    if (e != 0) {
+        last_dropped = 1;   /* Prepare for incoming logs */
+        LOG_ERR("ctl_enqueuedata() fail  ref: %p unit: %u len: %zu errno: %d", ref, unit, len, e);
+    }
+
+    ok = OSCompareAndSwap(1, 0, &spin_lock);
+    kassertf(ok, "OSCompareAndSwap() 1 to 0 fail  val: %#x", spin_lock);
+
+    return e;
+}
+
 void log_printf(uint32_t level, const char *fmt, ...)
 {
-    if (kctlunit == 0) return;
-
     struct kextlog_stackmsg msg;
     struct kextlog_msghdr *msgp;
     int len;
@@ -108,6 +139,9 @@ void log_printf(uint32_t level, const char *fmt, ...)
 
 out_again:
     msgp = (struct kextlog_msghdr *) &msg;
+
+    /* Push message to syslog if log kctl not yet ready */
+    if (kctlunit == 0) goto out_vprintf;
 
     va_start(ap, fmt);
     /*
@@ -147,7 +181,18 @@ out_overflow:
         }
     }
 
-    /* TODO: send log message into user space */
+    msgp->hdr.type = SOCKMSG_TYPE_KEXTLOG;
+    msgp->hdr.size = msgsz;
+    msgp->level = level;
+    msgp->flags = flags;
+    msgp->timestamp = mach_absolute_time();
+
+    if (enqueue_log(msgp, msgsz) != 0) {
+out_vprintf:
+        va_start(ap, fmt);
+        (void) vprintf(fmt, ap);
+        va_end(ap);
+    }
 
     if (msgp != (struct kextlog_msghdr *) &msg) {
         /* _FREE(NULL, type) do nop */
