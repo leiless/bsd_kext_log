@@ -172,6 +172,8 @@ out_again:
                 /* TOCTOU: Some arguments got modified in the interim */
                 _FREE(msgp, M_TEMP);
                 goto out_again;
+            } else {
+                len = len2;
             }
         } else {
             msgp = (struct kextlog_msghdr *) &msg;
@@ -181,8 +183,7 @@ out_overflow:
         }
     }
 
-    msgp->hdr.type = SOCKMSG_TYPE_KEXTLOG;
-    msgp->hdr.size = msgsz;
+    msgp->size = len + 1;
     msgp->level = level;
     msgp->flags = flags;
     msgp->timestamp = mach_absolute_time();
