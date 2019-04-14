@@ -12,5 +12,7 @@
 errno_t log_kctl_register(void);
 errno_t log_kctl_deregister(void);
 
+void log_printf(uint32_t, const char *, ...) __printflike(2, 3);
+
 #endif /* LOG_KCTL_H */
 

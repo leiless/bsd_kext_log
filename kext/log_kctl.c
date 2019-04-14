@@ -8,6 +8,7 @@
 
 #include "log_kctl.h"
 #include "utils.h"
+#include "kextlog.h"
 
 #define LOG_KCTL_NAME       "net.tty4.kext.kctl.log"
 
@@ -29,7 +30,7 @@ static struct kern_ctl_reg kctlreg = {
 };
 
 static kern_ctl_ref kctlref = NULL;
-static volatile u_int32_t kctlunit = 0;
+static volatile u_int32_t kctlunit = 0;     /* Active unit is positive */
 
 static errno_t log_kctl_connect(
         kern_ctl_ref ref,
@@ -91,5 +92,66 @@ errno_t log_kctl_deregister(void)
         LOG_ERR("ctl_deregister() fail  ref: %p errno: %d", kctlref, e);
     }
     return e;
+}
+
+void log_printf(uint32_t level, const char *fmt, ...)
+{
+    if (kctlunit == 0) return;
+
+    struct kextlog_stackmsg msg;
+    struct kextlog_msghdr *msgp;
+    int len;
+    int len2;
+    va_list ap;
+    uint32_t msgsz;
+    uint32_t flags = 0;
+
+out_again:
+    msgp = (struct kextlog_msghdr *) &msg;
+
+    va_start(ap, fmt);
+    /*
+     * vsnprintf() return the number of characters that would have been printed
+     *  if the size were unlimited(not including the final `\0')
+     *
+     * return value of vsnprintf() always non-negative
+     */
+    len = vsnprintf(msg.buffer, sizeof(msg.buffer), fmt, ap);
+    va_end(ap);
+
+    if (__builtin_uadd_overflow(sizeof(*msgp), len, &msgsz) ||
+        /* Includes log message trailing `\0' */
+        __builtin_uadd_overflow(msgsz, 1, &msgsz)) {
+        /* Should never happen */
+        LOG_ERR("log_printf() message size overflow  level: %u fmt: %s msgsz: %u", level, fmt, msgsz);
+        goto out_overflow;
+    }
+
+    if (len >= (int) sizeof(msg.buffer)) {
+        msgp = (struct kextlog_msghdr *) _MALLOC(msgsz, M_TEMP, M_NOWAIT);
+        if (msgp != NULL) {
+            va_start(ap, fmt);
+            len2 = vsnprintf(msgp->buffer, len + 1, fmt, ap);
+            va_end(ap);
+
+            if (len2 > len) {
+                /* TOCTOU: Some arguments got modified in the interim */
+                _FREE(msgp, M_TEMP);
+                goto out_again;
+            }
+        } else {
+            msgp = (struct kextlog_msghdr *) &msg;
+out_overflow:
+            msgsz = sizeof(msg);
+            flags |= KEXTLOG_FLAG_MSG_TRUNCATED;
+        }
+    }
+
+    /* TODO: send log message into user space */
+
+    if (msgp != (struct kextlog_msghdr *) &msg) {
+        /* _FREE(NULL, type) do nop */
+        _FREE(msgp, M_TEMP);
+    }
 }
 

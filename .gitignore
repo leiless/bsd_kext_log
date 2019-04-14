@@ -1,6 +1,12 @@
 .DS_Store
-DerivedData/
-*.xcodeproj/
-*.plist
+*~
 *.swp
+*.o
+*.out
+*.plist
+*.kext
+*.dSYM
+*.xcodeproj/
+*.xcworkspace/
+DerivedData/
 
