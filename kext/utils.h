@@ -7,6 +7,8 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <kern/debug.h>
+
 #ifndef __kext_makefile__
 #define KEXTNAME_S          "bsd_kext_log"
 #endif
@@ -78,6 +80,11 @@
 #endif
 
 #define kassert_nonnull(ptr)    kassert(((void *) ptr) != NULL)
+
+int kcb_get(void);
+int kcb_put(void);
+int kcb_read(void);
+void kcb_invalidate(void);
 
 #endif /* UTILS_H */
 
