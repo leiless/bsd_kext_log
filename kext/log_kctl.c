@@ -2,8 +2,8 @@
  * Created 190414 lynnl
  */
 
-#include <sys/systm.h>
 #include <sys/errno.h>
+#include <sys/kern_control.h>
 #include <libkern/OSAtomic.h>
 #include <mach/mach_time.h>
 

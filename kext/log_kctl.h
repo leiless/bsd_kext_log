@@ -7,7 +7,9 @@
 #ifndef LOG_KCTL_H
 #define LOG_KCTL_H
 
-#include <sys/kern_control.h>
+#include <sys/systm.h>
+
+#include "kextlog.h"
 
 errno_t log_kctl_register(void);
 errno_t log_kctl_deregister(void);
