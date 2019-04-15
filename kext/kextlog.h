@@ -7,11 +7,11 @@
 
 #include <stdint.h>
 
-#define KEXTLOG_LEVEL_INFO          0
+#define KEXTLOG_LEVEL_TRACE         0
 #define KEXTLOG_LEVEL_DEBUG         1
-#define KEXTLOG_LEVEL_WARNING       2
-#define KEXTLOG_LEVEL_ERROR         3
-#define KEXTLOG_LEVEL_TRACE         4
+#define KEXTLOG_LEVEL_INFO          2
+#define KEXTLOG_LEVEL_WARNING       3
+#define KEXTLOG_LEVEL_ERROR         4
 
 /*
  * Indicate direct-previous messages dropped due to failure

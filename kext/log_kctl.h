@@ -14,5 +14,20 @@ errno_t log_kctl_deregister(void);
 
 void log_printf(uint32_t, const char *, ...) __printflike(2, 3);
 
+#define log_trace(fmt, ...) \
+    log_printf(KEXTLOG_LEVEL_TRACE, fmt, ##__VA_ARGS__)
+
+#define log_debug(fmt, ...) \
+    log_printf(KEXTLOG_LEVEL_DEBUG, fmt, ##__VA_ARGS__)
+
+#define log_info(fmt, ...) \
+    log_printf(KEXTLOG_LEVEL_INFO, fmt, ##__VA_ARGS__)
+
+#define log_warning(fmt, ...) \
+    log_printf(KEXTLOG_LEVEL_WARNING, fmt, ##__VA_ARGS__)
+
+#define log_error(fmt, ...) \
+    log_printf(KEXTLOG_LEVEL_ERROR, fmt, ##__VA_ARGS__)
+
 #endif /* LOG_KCTL_H */
 

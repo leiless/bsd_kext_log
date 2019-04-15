@@ -139,6 +139,9 @@ void log_printf(uint32_t level, const char *fmt, ...)
     uint32_t msgsz;
     uint32_t flags = 0;
 
+    kassertf(level >= KEXTLOG_LEVEL_TRACE && level <= KEXTLOG_LEVEL_ERROR, "Bad log level %u", level);
+    kassert_nonnull(fmt);
+
 out_again:
     msgp = (struct kextlog_msghdr *) &msg;
 
