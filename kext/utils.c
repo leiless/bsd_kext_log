@@ -17,7 +17,7 @@
  * kcb stands for kernel callbacks  a global refcnt used in kext
  * @return      -1(actually negative value) if kcb invalidated
  */
-static int kcb(int opt)
+static inline int kcb(int opt)
 {
     static volatile SInt i = 0;
     static struct timespec ts = {0, 1e+6};  /* 100ms */
