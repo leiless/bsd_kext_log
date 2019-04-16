@@ -39,7 +39,9 @@ static inline int kcb(int opt)
 
     case KCB_OPT_INVALIDATE:
         do {
-            while (i > 0) msleep((void *) &i, NULL, PWAIT, NULL, &ts);
+            rd = i;
+            kassertf(rd >= 0, "invalidate kcb more than once?!  i: %d", rd);
+            while (i > 0) (void) msleep((void *) &i, NULL, PWAIT, NULL, &ts);
         } while (!OSCompareAndSwap(0, (UInt32) -1, &i));
         /* Fall through */
 
@@ -75,7 +77,7 @@ int kcb_put(void)
 }
 
 /**
- * Read refcnt of activated kext callbacks
+ * Read refcnt of activated kext callbacks(rarely used)
  */
 int kcb_read(void)
 {

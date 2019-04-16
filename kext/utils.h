@@ -19,6 +19,8 @@
  */
 #define UNUSED(e, ...)      (void) ((void) (e), ##__VA_ARGS__)
 
+#define ARRAY_SIZE(a)       (sizeof(a) / sizeof(*a))
+
 /**
  * Compile-time assurance  see: linux/arch/x86/boot/boot.h
  * Will fail build if condition yield true
@@ -68,7 +70,7 @@
  * @ex      the expression
  * @fmt     panic message format
  *
- * Example: kassertf(sz > 0, "Why size %zd nonpositive?", sz);
+ * Example: kassertf(sz > 0, "Why size %zd non-positive?", sz);
  */
 #define kassertf(ex, fmt, ...) \
     (ex) ? (void) 0 : panicf("Assert `%s' failed: " fmt, #ex, ##__VA_ARGS__)

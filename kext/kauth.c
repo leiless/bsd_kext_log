@@ -67,6 +67,32 @@ out_exit:
     return (vnode_path_t) {e, len, path};
 }
 
+static int generic_scope_cb(
+        kauth_cred_t cred,
+        void *idata,
+        kauth_action_t act,
+        uintptr_t arg0,
+        uintptr_t arg1,
+        uintptr_t arg2,
+        uintptr_t arg3)
+{
+    UNUSED(cred, idata, act, arg0, arg1, arg2, arg3);
+    return KAUTH_RESULT_DEFER;
+}
+
+static int process_scope_cb(
+        kauth_cred_t cred,
+        void *idata,
+        kauth_action_t act,
+        uintptr_t arg0,
+        uintptr_t arg1,
+        uintptr_t arg2,
+        uintptr_t arg3)
+{
+    UNUSED(cred, idata, act, arg0, arg1, arg2, arg3);
+    return KAUTH_RESULT_DEFER;
+}
+
 static int vnode_scope_cb(
         kauth_cred_t cred,
         void *idata,
@@ -118,16 +144,60 @@ out_put:
     return KAUTH_RESULT_DEFER;
 }
 
-static kauth_listener_t vnode_scope_ref = NULL;
+static int fileop_scope_cb(
+        kauth_cred_t cred,
+        void *idata,
+        kauth_action_t act,
+        uintptr_t arg0,
+        uintptr_t arg1,
+        uintptr_t arg2,
+        uintptr_t arg3)
+{
+    UNUSED(cred, idata, act, arg0, arg1, arg2, arg3);
+    return KAUTH_RESULT_DEFER;
+}
+
+static const char *scope_name[] = {
+    KAUTH_SCOPE_GENERIC,
+    KAUTH_SCOPE_PROCESS,
+    KAUTH_SCOPE_VNODE,
+    KAUTH_SCOPE_FILEOP,
+};
+
+static kauth_scope_callback_t scope_cb[] = {
+    generic_scope_cb,
+    process_scope_cb,
+    vnode_scope_cb,
+    fileop_scope_cb,
+};
+
+static kauth_listener_t scope_ref[] = {
+    NULL, NULL, NULL, NULL,
+};
 
 errno_t kauth_register(void)
 {
     errno_t e = 0;
-    vnode_scope_ref = kauth_listen_scope(KAUTH_SCOPE_VNODE, vnode_scope_cb, NULL);
-    if (vnode_scope_ref == NULL) {
-        e = ENOMEM;
-        log_error("kauth_listen_scope() fail  scope: %s", KAUTH_SCOPE_VNODE);
+    int i;
+
+    BUILD_BUG_ON(ARRAY_SIZE(scope_name) != ARRAY_SIZE(scope_cb));
+    BUILD_BUG_ON(ARRAY_SIZE(scope_name) != ARRAY_SIZE(scope_ref));
+
+    for (i = 0; i < (int) ARRAY_SIZE(scope_name); i++) {
+        scope_ref[i] = kauth_listen_scope(scope_name[i], scope_cb[i], NULL);
+
+        if (scope_ref[i] == NULL) {
+            e = ENOMEM;
+            log_error("kauth_listen_scope() fail  scope: %s", scope_name[i]);
+            while (i-- > 0) {
+                kauth_unlisten_scope(scope_ref[i]);
+                scope_ref[i] = NULL;
+            }
+            kcb_invalidate();
+            break;
+        }
     }
+
     return e;
 }
 
