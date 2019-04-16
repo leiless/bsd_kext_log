@@ -76,7 +76,10 @@ static int generic_scope_cb(
         uintptr_t arg2,
         uintptr_t arg3)
 {
+    if (kcb_get() < 0) goto out_put;
     UNUSED(cred, idata, act, arg0, arg1, arg2, arg3);
+out_put:
+    (void) kcb_put();
     return KAUTH_RESULT_DEFER;
 }
 
@@ -89,7 +92,10 @@ static int process_scope_cb(
         uintptr_t arg2,
         uintptr_t arg3)
 {
+    if (kcb_get() < 0) goto out_put;
     UNUSED(cred, idata, act, arg0, arg1, arg2, arg3);
+out_put:
+    (void) kcb_put();
     return KAUTH_RESULT_DEFER;
 }
 
@@ -153,7 +159,10 @@ static int fileop_scope_cb(
         uintptr_t arg2,
         uintptr_t arg3)
 {
+    if (kcb_get() < 0) goto out_put;
     UNUSED(cred, idata, act, arg0, arg1, arg2, arg3);
+out_put:
+    (void) kcb_put();
     return KAUTH_RESULT_DEFER;
 }
 
@@ -189,11 +198,7 @@ errno_t kauth_register(void)
         if (scope_ref[i] == NULL) {
             e = ENOMEM;
             log_error("kauth_listen_scope() fail  scope: %s", scope_name[i]);
-            while (i-- > 0) {
-                kauth_unlisten_scope(scope_ref[i]);
-                scope_ref[i] = NULL;
-            }
-            kcb_invalidate();
+            kauth_deregister();
             break;
         }
     }
