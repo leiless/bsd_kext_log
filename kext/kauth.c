@@ -201,3 +201,17 @@ errno_t kauth_register(void)
     return e;
 }
 
+void kauth_deregister(void)
+{
+    int i;
+
+    for (i = 0; i < (int) ARRAY_SIZE(scope_name); i++) {
+        if (scope_ref[i] != NULL) {
+            kauth_unlisten_scope(scope_ref[i]);
+            scope_ref[i] = NULL;
+        }
+    }
+
+    kcb_invalidate();
+}
+
