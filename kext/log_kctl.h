@@ -11,8 +11,8 @@
 
 #include "kextlog.h"
 
-errno_t log_kctl_register(void);
-errno_t log_kctl_deregister(void);
+kern_return_t log_kctl_register(void);
+kern_return_t log_kctl_deregister(void);
 
 void log_printf(uint32_t, const char *, ...) __printflike(2, 3);
 

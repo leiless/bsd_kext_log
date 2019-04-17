@@ -71,7 +71,7 @@ static errno_t log_kctl_disconnect(
     return 0;
 }
 
-errno_t log_kctl_register(void)
+kern_return_t log_kctl_register(void)
 {
     errno_t e = ctl_register(&kctlreg, &kctlref);
     if (e == 0) {
@@ -79,10 +79,10 @@ errno_t log_kctl_register(void)
     } else {
         LOG_ERR("ctl_register() fail  errno: %d", e);
     }
-    return e;
+    return e ? KERN_FAILURE : KERN_SUCCESS;
 }
 
-errno_t log_kctl_deregister(void)
+kern_return_t log_kctl_deregister(void)
 {
     errno_t e = 0;
     /* ctl_deregister(NULL) returns EINVAL */
@@ -92,7 +92,7 @@ errno_t log_kctl_deregister(void)
     } else {
         LOG_ERR("ctl_deregister() fail  ref: %p errno: %d", kctlref, e);
     }
-    return e;
+    return e ? KERN_FAILURE : KERN_SUCCESS;
 }
 
 static int enqueue_log(struct kextlog_msghdr *msgp, size_t len)

@@ -184,9 +184,9 @@ static kauth_listener_t scope_ref[] = {
     NULL, NULL, NULL, NULL,
 };
 
-errno_t kauth_register(void)
+kern_return_t kauth_register(void)
 {
-    errno_t e = 0;
+    kern_return_t r = 0;
     int i;
 
     BUILD_BUG_ON(ARRAY_SIZE(scope_name) != ARRAY_SIZE(scope_cb));
@@ -196,14 +196,14 @@ errno_t kauth_register(void)
         scope_ref[i] = kauth_listen_scope(scope_name[i], scope_cb[i], NULL);
 
         if (scope_ref[i] == NULL) {
-            e = ENOMEM;
+            r = KERN_FAILURE;
             log_error("kauth_listen_scope() fail  scope: %s", scope_name[i]);
             kauth_deregister();
             break;
         }
     }
 
-    return e;
+    return r;
 }
 
 void kauth_deregister(void)
