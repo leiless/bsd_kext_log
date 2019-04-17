@@ -33,12 +33,15 @@ struct kextlog_msghdr {
     char buffer[0];
 };
 
+/* Only visible in kernel environment */
+#ifdef KERNEL
 #define KEXTLOG_STACKMSG_SIZE       128
 
 struct kextlog_stackmsg {
     struct kextlog_msghdr hdr;
     char buffer[KEXTLOG_STACKMSG_SIZE];
 };
+#endif
 
 #endif /* KEXTLOG_H */
 

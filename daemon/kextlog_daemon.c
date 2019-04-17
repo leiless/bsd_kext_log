@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #include <sys/errno.h>
@@ -11,6 +12,8 @@
 #include <sys/sys_domain.h>
 #include <sys/kern_control.h>
 #include <sys/ioctl.h>
+
+#include "../kext/kextlog.h"
 
 #define LOG(fmt, ...)       (void) printf(fmt "\n", ##__VA_ARGS__)
 #define LOG_OFF(fmt, ...)   (void) ((void) (fmt), ##__VA_ARGS__)
@@ -92,13 +95,68 @@ out_close:
     goto out_exit;
 }
 
+#define BUFFER_SIZE     8192
+
+static char message[BUFFER_SIZE];
+
+static void read_log_from_kctl(int fd)
+{
+    struct kextlog_msghdr msg;
+    ssize_t n;
+    char *p;
+
+out_read:
+    while (1) {
+        n = read(fd, &msg, sizeof(msg));
+        if (n < 0) {
+            if (errno == EINTR) goto out_read;
+            LOG_ERR("read(2) fail  errno: %d", errno);
+            break;
+        } else if (n != sizeof(msg)) {
+            LOG_ERR("expected size %zu  got %zd", sizeof(msg), n);
+            break;
+        }
+
+        LOG("level: %u flags: %#x ts: %#llx sz: %u",
+            msg.level, msg.flags, msg.timestamp, msg.size);
+
+        if (msg.size <= n) {
+            p = message;
+        } else {
+            p = (char *) malloc(msg.size);
+            if (p == NULL) {
+                LOG_ERR("malloc(3) fail  size: %u errno: %d", msg.size, errno);
+                break;
+            }
+        }
+
+out_read2:
+        n = read(fd, p, msg.size);
+        if (n < 0) {
+            if (errno == EINTR) goto out_read2;
+            LOG_ERR("read(2) fail  errno: %d", errno);
+            break;
+        } else if (n != msg.size) {
+            LOG_ERR("expected size %u  got %zd", msg.size, n);
+            break;
+        }
+
+        LOG("%.*s", (int) n, p);
+
+        if (p != message) free(p);
+    }
+}
+
 #define KEXTLOG_KCTL_NAME       "net.tty4.kext.kctl.log"
 #define KEXTLOG_KCTL_SOCKTYPE   SOCK_DGRAM
 
 int main(int argc, char *argv[])
 {
     int fd = connect_to_kctl(KEXTLOG_KCTL_NAME, KEXTLOG_KCTL_SOCKTYPE);
-    if (fd >= 0) (void) close(fd);
+    if (fd >= 0) {
+        read_log_from_kctl(fd);
+        (void) close(fd);
+    }
     return 0;
 }
 
