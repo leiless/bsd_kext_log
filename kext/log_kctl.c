@@ -16,6 +16,15 @@
 static errno_t log_kctl_connect( kern_ctl_ref, struct sockaddr_ctl *, void **);
 static errno_t log_kctl_disconnect(kern_ctl_ref, u_int32_t, void *);
 
+/*
+ * NOTE:
+ *  xnu/bsd/kern/kern_control.c
+ *      #define CTL_SENDSIZE (2 * 1024)     //  data into kernel
+ *      #define CTL_RECVSIZE (8 * 1024)     //  data to user space
+ *  above denoted default send/recv buffer size
+ *
+ * see: xnu/bsd/kern/kern_control.c#ctl_getenqueuespace
+ */
 static struct kern_ctl_reg kctlreg = {
     LOG_KCTL_NAME,          /* ctl_name */
     0,                      /* ctl_id */
