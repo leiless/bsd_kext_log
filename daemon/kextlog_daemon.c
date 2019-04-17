@@ -15,6 +15,12 @@
 
 #include "../kext/kextlog.h"
 
+/*
+ * Used to indicate unused function parameters
+ * see: <sys/cdefs.h>#__unused
+ */
+#define UNUSED(e, ...)      (void) ((void) (e), ##__VA_ARGS__)
+
 #define LOG(fmt, ...)       (void) printf(fmt "\n", ##__VA_ARGS__)
 #define LOG_OFF(fmt, ...)   (void) ((void) (fmt), ##__VA_ARGS__)
 #define LOG_ERR(fmt, ...)   (void) fprintf(stderr, "[ERR] " fmt "\n", ##__VA_ARGS__)
@@ -152,11 +158,13 @@ out_read2:
 
 int main(int argc, char *argv[])
 {
+    UNUSED(argc, argv);
+
     int fd = connect_to_kctl(KEXTLOG_KCTL_NAME, KEXTLOG_KCTL_SOCKTYPE);
     if (fd >= 0) {
         read_log_from_kctl(fd);
         (void) close(fd);
     }
-    return 0;
+    return fd >= 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 

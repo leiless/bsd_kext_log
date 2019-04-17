@@ -9,4 +9,7 @@
 *.xcodeproj/
 *.xcworkspace/
 DerivedData/
+daemon/kextlog_daemon-debug
+daemon/kextlog_daemon
+
 
