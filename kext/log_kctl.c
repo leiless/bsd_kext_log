@@ -2,6 +2,8 @@
  * Created 190414 lynnl
  */
 
+#include <stdint.h>
+#include <sys/types.h>
 #include <sys/errno.h>
 #include <sys/kern_control.h>
 #include <libkern/OSAtomic.h>
