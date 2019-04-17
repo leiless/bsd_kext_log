@@ -39,10 +39,8 @@ static inline int kcb(int opt)
 
     case KCB_OPT_INVALIDATE:
         do {
-            rd = i;
-            kassertf(rd >= 0, "invalidate kcb more than once?!  i: %d", rd);
             while (i > 0) (void) msleep((void *) &i, NULL, PWAIT, NULL, &ts);
-        } while (!OSCompareAndSwap(0, (UInt32) -1, &i));
+        } while (i >= 0 && !OSCompareAndSwap(0, (UInt32) -1, &i));
         /* Fall through */
 
     case KCB_OPT_READ:
@@ -87,7 +85,6 @@ int kcb_read(void)
 
 /**
  * Invalidate kcb counter
- * You should call this function only once after all spawn threads unattached
  * Will block until all threads stopped and counter invalidated
  */
 void kcb_invalidate(void)
