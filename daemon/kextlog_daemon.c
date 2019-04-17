@@ -21,10 +21,10 @@
  */
 #define UNUSED(e, ...)      (void) ((void) (e), ##__VA_ARGS__)
 
-#define LOG(fmt, ...)       (void) printf(fmt "\n", ##__VA_ARGS__)
+#define LOG(fmt, ...)       (void) fprintf(stderr, fmt "\n", ##__VA_ARGS__)
 #define LOG_OFF(fmt, ...)   (void) ((void) (fmt), ##__VA_ARGS__)
-#define LOG_ERR(fmt, ...)   (void) fprintf(stderr, "[ERR] " fmt "\n", ##__VA_ARGS__)
-#define LOG_WARN(fmt, ...)  (void) fprintf(stderr, "[WARN] " fmt "\n", ##__VA_ARGS__)
+#define LOG_ERR(fmt, ...)   LOG("[ERR] " fmt, ##__VA_ARGS__)
+#define LOG_WARN(fmt, ...)  LOG("[WARN] " fmt, ##__VA_ARGS__)
 #ifdef DEBUG
 #define LOG_DBG(fmt, ...)   LOG("[DBG] " fmt, ##__VA_ARGS__)
 #else
