@@ -86,7 +86,7 @@ static int connect_to_kctl(const char *name, int socktype)
 
     e = connect(fd, (struct sockaddr *) &sc, sizeof(struct sockaddr_ctl));
     if (e == -1) {
-        LOG_ERR("connect(2) fail  fd: %d", fd);
+        LOG_ERR("connect(2) fail  fd: %d errno: %d", fd, errno);
         goto out_close;
     }
 

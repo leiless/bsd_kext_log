@@ -106,7 +106,7 @@ kern_return_t log_kctl_deregister(void)
     return e ? KERN_FAILURE : KERN_SUCCESS;
 }
 
-static int enqueue_log(struct kextlog_msghdr *msgp, size_t len)
+static int enqueue_log(struct kextlog_msghdr *msg, size_t len)
 {
     static uint8_t last_dropped = 0;
     static volatile uint32_t spin_lock = 0;
@@ -116,18 +116,19 @@ static int enqueue_log(struct kextlog_msghdr *msgp, size_t len)
     errno_t e;
     Boolean ok;
 
-    kassert_nonnull(msgp);
+    kassert_nonnull(msg);
+    kassertf(sizeof(*msg) + msg->size == len, "Message size mismatch  %zu vs %zu", sizeof(*msg) + msg->size, len);
 
     /* TODO: use mutex instead of busy spin lock */
     while (!OSCompareAndSwap(0, 1, &spin_lock)) continue;
 
     if (last_dropped) {
         last_dropped = 0;
-        msgp->flags |= KEXTLOG_FLAG_MSG_DROPPED;
+        msg->flags |= KEXTLOG_FLAG_MSG_DROPPED;
     }
 
     /* Message buffer's `\0' will also push into user space */
-    e = ctl_enqueuedata(kctlref, kctlunit, msgp, len, 0);
+    e = ctl_enqueuedata(ref, unit, msg, len, 0);
     if (e != 0) last_dropped = 1;
 
     ok = OSCompareAndSwap(1, 0, &spin_lock);
@@ -161,6 +162,7 @@ out_again:
 
     va_start(ap, fmt);
     /*
+     * [sic vsnprintf(3)]
      * vsnprintf() return the number of characters that would have been printed
      *  if the size were unlimited(not including the final `\0')
      *
@@ -184,8 +186,9 @@ out_again:
             len2 = vsnprintf(msgp->buffer, len + 1, fmt, ap);
             va_end(ap);
 
-            if (len2 > len) {
+            if (len < len2) {
                 /* TOCTOU: Some arguments got modified in the interim */
+                LOG_WARN("TOCTOU bug  old: %d vs new :%d", len, len2);
                 _FREE(msgp, M_TEMP);
                 goto out_again;
             } else {
