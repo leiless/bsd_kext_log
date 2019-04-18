@@ -184,6 +184,13 @@ static inline void log_sysmbuf(uint32_t level, const char *fmt, va_list ap)
     kassertf(ok, "OSCompareAndSwap() 1 to 0 fail  val: %#x", spin_lock);
 }
 
+#define KEXTLOG_STACKMSG_SIZE       128
+
+struct kextlog_stackmsg {
+    struct kextlog_msghdr hdr;
+    char buffer[KEXTLOG_STACKMSG_SIZE];
+};
+
 void log_printf(uint32_t level, const char *fmt, ...)
 {
     struct kextlog_stackmsg msg;
