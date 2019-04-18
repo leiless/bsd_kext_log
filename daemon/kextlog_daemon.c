@@ -2,6 +2,7 @@
  * Created 190417 lynnl
  */
 
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -123,8 +124,10 @@ out_read:
             break;
         }
 
-        LOG("level: %u flags: %#x ts: %#llx sz: %u",
-            msg.level, msg.flags, msg.timestamp, msg.size);
+        assert(msg._padding == _KEXTLOG_PADDING_MAGIC);
+
+        LOG("ts: %#llx level: %u flags: %#3x sz: %u",
+            msg.timestamp, msg.level, msg.flags, msg.size);
 
         if (msg.size <= n) {
             p = message;

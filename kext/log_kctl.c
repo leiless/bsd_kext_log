@@ -252,10 +252,11 @@ out_overflow:
         }
     }
 
+    msgp->timestamp = mach_absolute_time();
     msgp->level = level;
     msgp->flags = flags;
-    msgp->timestamp = mach_absolute_time();
     msgp->size = len + 1;
+    msgp->_padding = _KEXTLOG_PADDING_MAGIC;
 
     if (enqueue_log(msgp, msgsz) != 0) {
 out_sysmbuf:

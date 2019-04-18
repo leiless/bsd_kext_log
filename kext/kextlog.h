@@ -19,19 +19,22 @@
 #define KEXTLOG_FLAG_MSG_DROPPED    0x1
 #define KEXTLOG_FLAG_MSG_TRUNCATED  0x2
 
+#define _KEXTLOG_PADDING_MAGIC      0x0fb9ac52
+
 struct kextlog_msghdr {
+    uint64_t timestamp;     /* always be mach_absolute_time() */
     uint32_t level;
     uint32_t flags;
-    uint64_t timestamp;     /* always be mach_absolute_time() */
 
     uint32_t size;          /* Size of message buffer */
+    uint32_t _padding;
 
     /*
      * Zero size must be given to silence
      *  -Wgnu-variable-sized-type-not-at-end for nested structs
      */
     char buffer[0];
-};
+} __attribute__ ((aligned (8)));
 
 #endif /* KEXTLOG_H */
 
