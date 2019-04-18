@@ -47,6 +47,7 @@
 #define LOG_WARN(fmt, ...)   LOG("[WARN] " fmt, ##__VA_ARGS__)
 #define LOG_ERR(fmt, ...)    LOG("[ERR] " fmt, ##__VA_ARGS__)
 #define LOG_BUG(fmt, ...)    LOG("[BUG] " fmt, ##__VA_ARGS__)
+#define LOG_TRACE(fmt, ...)  LOG("[TRACE] " fmt, ##__VA_ARGS__)
 #define LOG_OFF(fmt, ...)    UNUSED(fmt, ##__VA_ARGS__)
 #ifdef DEBUG
 #define LOG_DBG(fmt, ...)    LOG("[DBG] " fmt, ##__VA_ARGS__)

@@ -141,24 +141,44 @@ static int enqueue_log(struct kextlog_msghdr *msg, size_t len)
     return e;
 }
 
-#define FMT_BUFSZ       768
 #define MSG_BUFSZ       4096
 
-static void log_sysmbuf(const char *fmt, va_list ap)
+/**
+ * Print message to system message buffer(last resort)
+ * The message may truncated if it's far too large
+ */
+static inline void log_sysmbuf(uint32_t level, const char *fmt, va_list ap)
 {
-    static char _fmt[FMT_BUFSZ];
-    static char _buf[MSG_BUFSZ];
+    static char buf[MSG_BUFSZ];
     static volatile uint32_t spin_lock = 0;
     Boolean ok;
 
     kassert_nonnull(fmt);
 
-    /* snprintf, vsnprintf is fast  thus spin lock do no hurts */
+    /* vsnprintf, printf should fast  thus spin lock do no hurts? */
     while (!OSCompareAndSwap(0, 1, &spin_lock)) continue;
 
-    /* TODO: check return value of snprintf() */
-    (void) snprintf(_fmt, FMT_BUFSZ, KEXTNAME_S ": %s\n", fmt);
-    (void) vsnprintf(_buf, MSG_BUFSZ, _fmt, ap);
+    (void) vsnprintf(buf, MSG_BUFSZ, fmt, ap);
+    switch (level) {
+    case KEXTLOG_LEVEL_TRACE:
+        LOG_TRACE("%s", buf);
+        break;
+    case KEXTLOG_LEVEL_DEBUG:
+        LOG_DBG("%s", buf);
+        break;
+    case KEXTLOG_LEVEL_INFO:
+        LOG("%s", buf);
+        break;
+    case KEXTLOG_LEVEL_WARNING:
+        LOG_WARN("%s", buf);
+        break;
+    case KEXTLOG_LEVEL_ERROR:
+        LOG_ERR("%s", buf);
+        break;
+    default:
+        panicf("unswitched log level %u", level);
+        __builtin_unreachable();
+    }
 
     ok = OSCompareAndSwap(1, 0, &spin_lock);
     kassertf(ok, "OSCompareAndSwap() 1 to 0 fail  val: %#x", spin_lock);
@@ -181,7 +201,7 @@ out_again:
     msgp = (struct kextlog_msghdr *) &msg;
 
     /* Push message to syslog if log kctl not yet ready */
-    if (kctlunit == 0) goto out_vprintf;
+    if (kctlunit == 0) goto out_sysmbuf;
 
     va_start(ap, fmt);
     /*
@@ -231,9 +251,9 @@ out_overflow:
     msgp->size = len + 1;
 
     if (enqueue_log(msgp, msgsz) != 0) {
-out_vprintf:
+out_sysmbuf:
         va_start(ap, fmt);
-        (void) vprintf(fmt, ap);
+        log_sysmbuf(level, fmt, ap);
         va_end(ap);
     }
 
