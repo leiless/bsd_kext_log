@@ -141,6 +141,29 @@ static int enqueue_log(struct kextlog_msghdr *msg, size_t len)
     return e;
 }
 
+#define FMT_BUFSZ       768
+#define MSG_BUFSZ       4096
+
+static void log_sysmbuf(const char *fmt, va_list ap)
+{
+    static char _fmt[FMT_BUFSZ];
+    static char _buf[MSG_BUFSZ];
+    static volatile uint32_t spin_lock = 0;
+    Boolean ok;
+
+    kassert_nonnull(fmt);
+
+    /* snprintf, vsnprintf is fast  thus spin lock do no hurts */
+    while (!OSCompareAndSwap(0, 1, &spin_lock)) continue;
+
+    /* TODO: check return value of snprintf() */
+    (void) snprintf(_fmt, FMT_BUFSZ, KEXTNAME_S ": %s\n", fmt);
+    (void) vsnprintf(_buf, MSG_BUFSZ, _fmt, ap);
+
+    ok = OSCompareAndSwap(1, 0, &spin_lock);
+    kassertf(ok, "OSCompareAndSwap() 1 to 0 fail  val: %#x", spin_lock);
+}
+
 void log_printf(uint32_t level, const char *fmt, ...)
 {
     struct kextlog_stackmsg msg;
