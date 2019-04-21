@@ -84,7 +84,7 @@ static int generic_scope_cb(
     char pcomm[MAXCOMLEN + 1];
 
     if (kcb_get() < 0) goto out_put;
-    UNUSED(cred, idata, arg0, arg1, arg2, arg3);
+    UNUSED(idata, arg0, arg1, arg2, arg3);
 
     uid = kauth_cred_getuid(cred);
     pid = proc_selfpid();
@@ -106,8 +106,47 @@ static int process_scope_cb(
         uintptr_t arg2,
         uintptr_t arg3)
 {
+    uid_t uid;
+    int pid;
+    char pcomm[MAXCOMLEN + 1];
+
+    proc_t proc;
+    int pid2;
+    char pcomm2[MAXCOMLEN + 1];
+    int signal;
+
     if (kcb_get() < 0) goto out_put;
-    UNUSED(cred, idata, act, arg0, arg1, arg2, arg3);
+    UNUSED(idata, arg2, arg3);
+
+    uid = kauth_cred_getuid(cred);
+    pid = proc_selfpid();
+    proc_selfname(pcomm, sizeof(pcomm));
+
+    switch (act) {
+    case KAUTH_PROCESS_CANTRACE:
+        proc = (proc_t) arg0;
+        pid2 = proc_pid(proc);
+        proc_name(pid2, pcomm2, sizeof(pcomm2));
+
+        log_info("process  act: %#x(can_trace) uid: %u pid: %d %s dst: %d %s",
+                    act, uid, pid, pcomm, pid2, pcomm2);
+        break;
+
+    case KAUTH_PROCESS_CANSIGNAL:
+        proc = (proc_t) arg0;
+        signal = (int) arg1;
+        pid2 = proc_pid(proc);
+        proc_name(pid2, pcomm2, sizeof(pcomm2));
+
+        log_info("process  act: %#x(can_signal) uid: %u pid: %d %s dst: %d %s sig: %d",
+                    act, uid, pid, pcomm, pid2, pcomm2, signal);
+        break;
+
+    default:
+        panicf("unknown action %#x in process scope", act);
+        __builtin_unreachable();
+    }
+
 out_put:
     (void) kcb_put();
     return KAUTH_RESULT_DEFER;
