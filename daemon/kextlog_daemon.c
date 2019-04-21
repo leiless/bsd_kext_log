@@ -158,9 +158,6 @@ out_read2:
     }
 }
 
-#define KEXTLOG_KCTL_NAME       "net.tty4.kext.kctl.log"
-#define KEXTLOG_KCTL_SOCKTYPE   SOCK_DGRAM
-
 int main(int argc, char *argv[])
 {
     UNUSED(argc, argv);
