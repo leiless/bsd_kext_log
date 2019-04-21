@@ -13,10 +13,10 @@
 #include "utils.h"
 #include "kextlog.h"
 
-#define LOG_KCTL_NAME       "net.tty4.kext.kctl.log"
-
 static errno_t log_kctl_connect( kern_ctl_ref, struct sockaddr_ctl *, void **);
 static errno_t log_kctl_disconnect(kern_ctl_ref, u_int32_t, void *);
+
+#define SOCK2FLAG(t)        ((t) == SOCK_STREAM ? CTL_FLAG_REG_SOCK_STREAM : 0)
 
 /*
  * NOTE:
@@ -28,17 +28,17 @@ static errno_t log_kctl_disconnect(kern_ctl_ref, u_int32_t, void *);
  * see: xnu/bsd/kern/kern_control.c#ctl_getenqueuespace
  */
 static struct kern_ctl_reg kctlreg = {
-    LOG_KCTL_NAME,          /* ctl_name */
-    0,                      /* ctl_id */
-    0,                      /* ctl_unit */
-    0,                      /* ctl_flags */
-    0,                      /* ctl_sendsize */
-    0,                      /* ctl_recvsize */
-    log_kctl_connect,       /* ctl_connect */
-    log_kctl_disconnect,    /* ctl_disconnect */
-    NULL,                   /* ctl_send */
-    NULL,                   /* ctl_setopt */
-    NULL,                   /* ctl_getopt */
+    KEXTLOG_KCTL_NAME,                  /* ctl_name */
+    0,                                  /* ctl_id */
+    0,                                  /* ctl_unit */
+    SOCK2FLAG(KEXTLOG_KCTL_SOCKTYPE),   /* ctl_flags */
+    0,                                  /* ctl_sendsize */
+    0,                                  /* ctl_recvsize */
+    log_kctl_connect,                   /* ctl_connect */
+    log_kctl_disconnect,                /* ctl_disconnect */
+    NULL,                               /* ctl_send */
+    NULL,                               /* ctl_setopt */
+    NULL,                               /* ctl_getopt */
 };
 
 static kern_ctl_ref kctlref = NULL;
@@ -86,7 +86,7 @@ kern_return_t log_kctl_register(void)
 {
     errno_t e = ctl_register(&kctlreg, &kctlref);
     if (e == 0) {
-        LOG_DBG("kctl %s registered  ref: %p", LOG_KCTL_NAME, kctlref);
+        LOG_DBG("kctl %s registered  ref: %p", KEXTLOG_KCTL_NAME, kctlref);
     } else {
         LOG_ERR("ctl_register() fail  errno: %d", e);
     }
@@ -99,7 +99,7 @@ kern_return_t log_kctl_deregister(void)
     /* ctl_deregister(NULL) returns EINVAL */
     e = ctl_deregister(kctlref);
     if (e == 0) {
-        LOG_DBG("kctl %s deregistered  ref: %p", LOG_KCTL_NAME, kctlref);
+        LOG_DBG("kctl %s deregistered  ref: %p", KEXTLOG_KCTL_NAME, kctlref);
     } else {
         LOG_ERR("ctl_deregister() fail  ref: %p errno: %d", kctlref, e);
     }

@@ -32,6 +32,8 @@
 #define LOG_DBG(fmt, ...)   LOG_OFF(fmt, ##__VA_ARGS__)
 #endif
 
+#define BUILD_BUG_ON(cond)  UNUSED(sizeof(char[-!!(cond)]))
+
 /**
  * Connect to a kernel control
  * @name        kernel control name

@@ -6,6 +6,10 @@
 #define KEXTLOG_H
 
 #include <stdint.h>
+#include <sys/socket.h>
+
+#define KEXTLOG_KCTL_NAME           "net.tty4.kext.kctl.log"
+#define KEXTLOG_KCTL_SOCKTYPE       SOCK_DGRAM
 
 #define KEXTLOG_LEVEL_TRACE         0
 #define KEXTLOG_LEVEL_DEBUG         1
@@ -19,7 +23,7 @@
 #define KEXTLOG_FLAG_MSG_DROPPED    0x1
 #define KEXTLOG_FLAG_MSG_TRUNCATED  0x2
 
-#define _KEXTLOG_PADDING_MAGIC      0x0fb9ac52
+#define _KEXTLOG_PADDING_MAGIC      0x65636166  /* Little-endian 'face' */
 
 struct kextlog_msghdr {
     uint64_t timestamp;     /* always be mach_absolute_time() */
