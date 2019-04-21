@@ -92,7 +92,7 @@ CFLAGS+=	$(SDKFLAGS) \
 		-mkernel
 
 # warnings
-CFLAGS+=	-Wall -Wextra -Werror
+CFLAGS+=	-Wall -Wextra -Wno-unused-function -Werror
 
 # linker flags
 ifdef MACOSX_VERSION_MIN
