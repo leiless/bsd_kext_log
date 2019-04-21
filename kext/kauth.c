@@ -1,5 +1,8 @@
 /*
  * Created 190415 lynnl
+ *
+ * see:
+ *  https://developer.apple.com/library/archive/technotes/tn2127/_index.html
  */
 
 #include <sys/types.h>
@@ -76,8 +79,19 @@ static int generic_scope_cb(
         uintptr_t arg2,
         uintptr_t arg3)
 {
+    uid_t uid;
+    int pid;
+    char pcomm[MAXCOMLEN + 1];
+
     if (kcb_get() < 0) goto out_put;
-    UNUSED(cred, idata, act, arg0, arg1, arg2, arg3);
+    UNUSED(cred, idata, arg0, arg1, arg2, arg3);
+
+    uid = kauth_cred_getuid(cred);
+    pid = proc_selfpid();
+    proc_selfname(pcomm, sizeof(pcomm));
+
+    log_info("generic  act: %#x uid: %u pid: %d %s", act, uid, pid, pcomm);
+
 out_put:
     (void) kcb_put();
     return KAUTH_RESULT_DEFER;
