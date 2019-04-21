@@ -172,8 +172,7 @@ static int vnode_scope_cb(
     vnode_path_t vpath;
 
     if (kcb_get() < 0) goto out_put;
-
-    kassertf(idata == NULL, "idata %p?!", idata);
+    UNUSED(idata, arg3);   /* XXX: TODO? */
 
     ctx = (vfs_context_t) arg0;
     UNUSED(ctx);
@@ -191,11 +190,8 @@ static int vnode_scope_cb(
         goto out_put;
     }
 
-    UNUSED(arg3);   /* XXX: TODO */
-
-    log_info("vnode  act: %#x dvp: %p vp: %p %#x %d %s uid: %u pid: %d %s",
-                act, dvp, vp, vnode_vid(vp), vnode_vtype(vp),
-                vpath.path, uid, pid, pcomm);
+    log_info("vnode  act: %#x dvp: %p vp: %p %d %s uid: %u pid: %d %s",
+                act, dvp, vp, vnode_vtype(vp), vpath.path, uid, pid, pcomm);
 
     _FREE(vpath.path, M_TEMP);
 out_put:
