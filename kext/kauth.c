@@ -154,9 +154,9 @@ static int vnode_scope_cb(
 
     UNUSED(arg3);   /* XXX: TODO */
 
-    log_info("vnode  act: %#x dvp: %p vp: %p %#x %d %s uid: %u pid: %s %d",
+    log_info("vnode  act: %#x dvp: %p vp: %p %#x %d %s uid: %u pid: %d %s",
                 act, dvp, vp, vnode_vid(vp), vnode_vtype(vp),
-                vpath.path, uid, pcomm, pid);
+                vpath.path, uid, pid, pcomm);
 
     _FREE(vpath.path, M_TEMP);
 out_put:
