@@ -203,6 +203,23 @@ out_put:
     return KAUTH_RESULT_DEFER;
 }
 
+/*
+ * [sic Technical Note TN2127 Kernel Authorization#File Operation Scope]
+ *
+ * Warning:
+ * Prior to Mac OS X 10.5 the file operation scope had a nasty gotcha(r. 4605516).
+ * If you install a listener in the this scope and handle the
+ *      KAUTH_FILEOP_RENAME,
+ *      KAUTH_FILEOP_LINK, or
+ *      KAUTH_FILEOP_EXEC actions,
+ *  you must test whether arg0 and arg1 are NULL before accessing them as strings.
+ *
+ * Under certain circumstances(most notably, very early in the boot sequence
+ *  and very late in the shutdown sequence),
+ *  the kernel might pass you NULL for these arguments.
+ *
+ * If you access such a pointer as a string, you will kernel panic.
+ */
 static int fileop_scope_cb(
         kauth_cred_t cred,
         void *idata,
@@ -212,8 +229,85 @@ static int fileop_scope_cb(
         uintptr_t arg2,
         uintptr_t arg3)
 {
+    uid_t uid;
+    int pid;
+    char pcomm[MAXCOMLEN + 1];
+
+    vnode_t vp;
+    const char *path1;
+    const char *path2;
+    int flags;
+
     if (kcb_get() < 0) goto out_put;
-    UNUSED(cred, idata, act, arg0, arg1, arg2, arg3);
+    UNUSED(idata, arg3);
+
+    uid = kauth_cred_getuid(cred);
+    pid = proc_selfpid();
+    proc_selfname(pcomm, sizeof(pcomm));
+
+    switch (act) {
+    case KAUTH_FILEOP_OPEN:
+        vp = (vnode_t) arg0;
+        path1 = (char *) arg1;
+
+        log_info("fileop  act: %#x(open) vp: %p %d %s uid: %u pid: %d %s",
+                    act, vp, vnode_vtype(vp), path1, uid, pid, pcomm);
+        break;
+
+    case KAUTH_FILEOP_CLOSE:
+        vp = (vnode_t) arg0;
+        path1 = (char *) arg1;
+        flags = (int) arg2;
+
+        log_info("fileop  act: %#x(close) vp: %p %d %s flags: %#x uid: %u pid: %d %s",
+                    act, vp, vnode_vtype(vp), path1, flags, uid, pid, pcomm);
+        break;
+
+    case KAUTH_FILEOP_RENAME:
+        path1 = (char * _Nullable) arg0;
+        path2 = (char * _Nullable) arg1;
+
+        log_info("fileop  act: %#x(rename) %s -> %s uid: %u pid: %d %s",
+                    act, path1, path2, uid, pid, pcomm);
+        break;
+
+    case KAUTH_FILEOP_EXCHANGE:
+        path1 = (char *) arg0;
+        path2 = (char *) arg1;
+
+        log_info("fileop  act: %#x(xchg) %s <=> %s uid: %u pid: %d %s",
+                    act, path1, path2, uid, pid, pcomm);
+        break;
+
+    case KAUTH_FILEOP_LINK:
+        path1 = (char * _Nullable) arg0;
+        path2 = (char * _Nullable) arg1;
+
+        log_info("fileop  act: %#x(link) %s ~> %s uid: %u pid: %d %s",
+                    act, path1, path2, uid, pid, pcomm);
+        break;
+
+    case KAUTH_FILEOP_EXEC:
+        vp = (vnode_t) arg0;
+        path1 = (char * _Nullable) arg1;
+
+        log_info("fileop  act: %#x(exec) vp: %p %d %s uid: %u pid: %d %s",
+                    act, vp, vnode_vtype(vp), path1, uid, pid, pcomm);
+        break;
+
+    case KAUTH_FILEOP_DELETE:
+        vp = (vnode_t) arg0;
+        path1 = (char *) arg1;
+
+        log_info("fileop  act: %#x(del) vp: %p %d %s uid: %u pid: %d %s",
+                    act, vp, vnode_vtype(vp), path1, uid, pid, pcomm);
+        break;
+
+    default:
+        panicf("unknown action %#x in fileop scope", act);
+        __builtin_unreachable();
+    }
+
 out_put:
     (void) kcb_put();
     return KAUTH_RESULT_DEFER;
