@@ -104,7 +104,8 @@ out_close:
     goto out_exit;
 }
 
-#define BUFFER_SIZE     16384
+//#define BUFFER_SIZE     16384
+#define BUFFER_SIZE     8192
 
 static char buffer[BUFFER_SIZE];
 
@@ -131,7 +132,7 @@ static void read_log_from_kctl(int fd)
                 concur, i, m->timestamp, m->level, m->flags, m->size);
 
             if (i + (ssize_t) (sizeof(*m) + m->size) > n) {
-                LOG_WARN("message body(%u bytes) goes into black hole?!  n: %zd", m->size, n);
+                LOG_WARN("message body(%u bytes) incomplete  n: %zd", m->size, n);
                 break;
             }
 

@@ -115,12 +115,23 @@ static int enqueue_log(struct kextlog_msghdr *msg, size_t len)
     u_int32_t unit = kctlunit;
     errno_t e;
     Boolean ok;
+    size_t sz;
 
     kassert_nonnull(msg);
     kassertf(sizeof(*msg) + msg->size == len, "Message size mismatch  %zu vs %zu", sizeof(*msg) + msg->size, len);
 
     /* TODO: use mutex instead of busy spin lock */
     while (!OSCompareAndSwap(0, 1, &spin_lock)) continue;
+
+    e = ctl_getenqueuespace(ref, unit, &sz);
+    if (e != 0) {
+        LOG_ERR("ctl_getenqueuespace() fail  ref: %p unit: %u errno: %d", ref, unit, e);
+        goto out_unlock;
+    } else if (len > sz) {
+        LOG_ERR("user space buffer(%zu bytes) is insufficient  ref: %p unit: %u len: %zu", sz, ref, unit, len);
+        e = ENOBUFS;
+        goto out_unlock;
+    }
 
     if (last_dropped) {
         last_dropped = 0;
@@ -129,8 +140,9 @@ static int enqueue_log(struct kextlog_msghdr *msg, size_t len)
 
     /* Message buffer's `\0' will also push into user space */
     e = ctl_enqueuedata(ref, unit, msg, len, 0);
-    if (e != 0) last_dropped = 1;
 
+out_unlock:
+    if (e != 0) last_dropped = 1;
     ok = OSCompareAndSwap(1, 0, &spin_lock);
     kassertf(ok, "OSCompareAndSwap() 1 to 0 fail  val: %#x", spin_lock);
 
