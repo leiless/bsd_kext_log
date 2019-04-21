@@ -93,7 +93,7 @@ static int connect_to_kctl(const char *name, int socktype)
         goto out_close;
     }
 
-    LOG("kctl %s connected  fd: %d", ci.ctl_name, fd);
+    LOG("kctl %s connected  fd: %d\n", ci.ctl_name, fd);
 
 out_exit:
     return fd;
@@ -104,57 +104,48 @@ out_close:
     goto out_exit;
 }
 
-#define BUFFER_SIZE     8192
+#define BUFFER_SIZE     16384
 
-static char message[BUFFER_SIZE];
+static char buffer[BUFFER_SIZE];
 
 static void read_log_from_kctl(int fd)
 {
-    struct kextlog_msghdr msg;
+    struct kextlog_msghdr *m;
     ssize_t n;
-    char *p;
+    ssize_t i;
+    ssize_t concur;
 
-out_read:
     while (1) {
-        n = read(fd, &msg, sizeof(msg));
+        n = read(fd, buffer, BUFFER_SIZE);
         if (n < 0) {
-            if (errno == EINTR) goto out_read;
+            if (errno == EINTR) continue;
             LOG_ERR("read(2) fail  errno: %d", errno);
             break;
-        } else if (n != sizeof(msg)) {
-            LOG_ERR("expected size %zu  got %zd", sizeof(msg), n);
-            break;
         }
+        /* If n != BUFFER_SIZE  it means an early socket read wakeup */
 
-        assert(msg._padding == _KEXTLOG_PADDING_MAGIC);
+        for (i = 0, concur = 0; i + (ssize_t) sizeof(*m) <= n; i += sizeof(*m) + m->size, concur++) {
+            m = (struct kextlog_msghdr *) (buffer + i);
 
-        LOG("ts: %#llx level: %u flags: %#3x sz: %u",
-            msg.timestamp, msg.level, msg.flags, msg.size);
+            LOG("[%zd:%zd]  ts: %#llx level: %u flags: %#3x sz: %u",
+                concur, i, m->timestamp, m->level, m->flags, m->size);
 
-        if (msg.size <= n) {
-            p = message;
-        } else {
-            p = (char *) malloc(msg.size);
-            if (p == NULL) {
-                LOG_ERR("malloc(3) fail  size: %u errno: %d", msg.size, errno);
+            if (i + (ssize_t) (sizeof(*m) + m->size) > n) {
+                LOG_WARN("message body(%u bytes) goes into black hole?!  n: %zd", m->size, n);
                 break;
+            }
+
+            LOG("%.*s\n", (int) m->size, m->buffer);
+
+            if (m->_padding != _KEXTLOG_PADDING_MAGIC) {
+                LOG_ERR("bad message magic: %#x", m->_padding);
+                assert(m->_padding == _KEXTLOG_PADDING_MAGIC);
             }
         }
 
-out_read2:
-        n = read(fd, p, msg.size);
-        if (n < 0) {
-            if (errno == EINTR) goto out_read2;
-            LOG_ERR("read(2) fail  errno: %d", errno);
-            break;
-        } else if (n != msg.size) {
-            LOG_ERR("expected size %u  got %zd", msg.size, n);
-            break;
+        if (i < n) {
+            LOG_WARN("%zd bytes left unread in buffer  n: %zd", n - i, n);
         }
-
-        LOG("%.*s", (int) n, p);
-
-        if (p != message) free(p);
     }
 }
 
