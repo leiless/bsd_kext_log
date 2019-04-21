@@ -44,6 +44,11 @@ static struct kern_ctl_reg kctlreg = {
 static kern_ctl_ref kctlref = NULL;
 static volatile u_int32_t kctlunit = 0;     /* Active unit is positive */
 
+/*
+ * XXX: kctl can be connected in the interim of kext loading
+ * You may happen to take further logic to
+ *  prevent client from connecting in such case
+ */
 static errno_t log_kctl_connect(
         kern_ctl_ref ref,
         struct sockaddr_ctl *sac,

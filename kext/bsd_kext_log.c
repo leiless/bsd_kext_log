@@ -14,13 +14,12 @@ kern_return_t bsd_kext_log_start(kmod_info_t *ki, void *d)
 
     UNUSED(ki, d);
 
-    r = log_kctl_register();
+    r = kauth_register();
     if (r) goto out_exit;
 
-    r = kauth_register();
+    r = log_kctl_register();
     if (r) {
-        /* XXX: what if a client connected in the interim(is it possible?) */
-        (void) log_kctl_deregister();
+        kauth_deregister();
         goto out_exit;
     }
 
