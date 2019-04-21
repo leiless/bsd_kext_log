@@ -260,6 +260,7 @@ out_again:
             msgp = (struct kextlog_msghdr *) &msg;
 out_overflow:
             msgsz = sizeof(msg);
+            len = sizeof(msg.buffer) - 1;
             flags |= KEXTLOG_FLAG_MSG_TRUNCATED;
         }
     }
