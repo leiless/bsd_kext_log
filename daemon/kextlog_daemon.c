@@ -107,8 +107,10 @@ out_close:
 /*
  * User space read buffer should over commit 25% from ctl_recvsize
  * see: xnu/bsd/kern/kern_control.c#ctl_rcvbspace
+ *
+ * Generally speaking: use more buffer in user space
  */
-#define BUFFER_SIZE     16384
+#define BUFFER_SIZE     24576       /* 8192 * 3 */
 
 static char buffer[BUFFER_SIZE];
 
