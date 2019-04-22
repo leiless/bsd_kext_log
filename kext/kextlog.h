@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <sys/socket.h>
 
-#define KEXTLOG_KCTL_NAME           "net.tty4.kext.kctl.log"
+#define KEXTLOG_KCTL_NAME           "net.trineo.kext.kctl.log"
 #define KEXTLOG_KCTL_SOCKTYPE       SOCK_DGRAM
 
 #define KEXTLOG_LEVEL_TRACE         0
