@@ -103,6 +103,8 @@ To stop the test, you should firstly terminate the daemon, and [kextunload(8)](x
 
 ### TODO
 
+* Add `sysctl` entries for logging diagnostic/statistic purposes.
+
 * Turn kctl's socket type into `SOCK_STREAM`, and test again.
 
 * Test on other macOS versions.
