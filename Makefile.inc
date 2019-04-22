@@ -3,7 +3,7 @@
 #
 
 KEXTNAME=bsd_kext_log
-KEXTVERSION=0000.00.01
-KEXTBUILD=0.0.1d1
-BUNDLEDOMAIN=cn.junkman
+KEXTVERSION=0000.00.10
+KEXTBUILD:=$(shell ./bump_build.sh)
+BUNDLEDOMAIN=net.trineo
 
