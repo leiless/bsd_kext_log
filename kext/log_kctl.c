@@ -202,6 +202,19 @@ struct kextlog_stackmsg {
     char buffer[KEXTLOG_STACKMSG_SIZE];
 };
 
+struct kextlog_statistics {
+    volatile uint64_t syslog;
+    /* TODO: volatile uint64_t enqueued; */
+    volatile uint64_t heapmsg;
+    volatile uint64_t stackmsg;
+    volatile uint64_t toctou;
+    volatile uint64_t oom;
+    volatile uint64_t enqueue_failure;
+};
+
+static struct kextlog_statistics _log_stat;
+const struct kextlog_statistics * const log_stat = &_log_stat;
+
 void log_printf(uint32_t level, const char *fmt, ...)
 {
     struct kextlog_stackmsg msg;
@@ -248,6 +261,8 @@ out_again:
             va_end(ap);
 
             if (len < len2) {
+                (void) OSIncrementAtomic64((SInt64 *) &_log_stat.toctou);
+
                 /* TOCTOU: Some arguments got modified in the interim */
                 LOG_WARN("TOCTOU bug  old: %d vs new :%d", len, len2);
                 _FREE(msgp, M_TEMP);
@@ -255,13 +270,19 @@ out_again:
             } else {
                 len = len2;
             }
+
+            (void) OSIncrementAtomic64((SInt64 *) &_log_stat.heapmsg);
         } else {
+            (void) OSIncrementAtomic64((SInt64 *) &_log_stat.oom);
+
             msgp = (struct kextlog_msghdr *) &msg;
 out_overflow:
             msgsz = sizeof(msg);
             len = sizeof(msg.buffer) - 1;
             flags |= KEXTLOG_FLAG_MSG_TRUNCATED;
         }
+    } else {
+        (void) OSIncrementAtomic64((SInt64 *) &_log_stat.stackmsg);
     }
 
     msgp->timestamp = mach_absolute_time();
@@ -271,7 +292,11 @@ out_overflow:
     msgp->_padding = _KEXTLOG_PADDING_MAGIC;
 
     if (enqueue_log(msgp, msgsz) != 0) {
+        (void) OSIncrementAtomic64((SInt64 *) &_log_stat.enqueue_failure);
+
 out_sysmbuf:
+        (void) OSIncrementAtomic64((SInt64 *) &_log_stat.syslog);
+
         va_start(ap, fmt);
         log_sysmbuf(level, fmt, ap);
         va_end(ap);

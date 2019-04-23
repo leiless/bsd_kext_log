@@ -36,5 +36,7 @@ void log_printf(uint32_t, const char *, ...) __printflike(2, 3);
 #define log_error(fmt, ...) \
     log_printf(KEXTLOG_LEVEL_ERROR, fmt, ##__VA_ARGS__)
 
+extern const struct kextlog_statistics * const log_stat;
+
 #endif /* LOG_KCTL_H */
 
