@@ -14,7 +14,7 @@ static SYSCTL_NODE(
     kextlog,
     CTLFLAG_RD,
     NULL,
-    "(unused) root sysctl node: kextlog"
+    "" /* root sysctl node: kextlog */
 )
 
 static SYSCTL_NODE(
@@ -23,7 +23,7 @@ static SYSCTL_NODE(
     statistics,
     CTLFLAG_RD,
     NULL,
-    "(unused) sysctl node: kextlog.statistics"
+    "" /* sysctl node: kextlog.statistics */
 )
 
 struct kextlog_statistics log_stat = {};
@@ -34,7 +34,7 @@ static SYSCTL_QUAD(
     syslog,
     CTLFLAG_RD,
     (uint64_t *) &log_stat.syslog,
-    "(unused) sysctl nub: kextlog.statistics.syslog"
+    "" /* sysctl nub: kextlog.statistics.syslog */
 )
 
 static SYSCTL_QUAD(
@@ -43,7 +43,7 @@ static SYSCTL_QUAD(
     heapmsg,
     CTLFLAG_RD,
     (uint64_t *) &log_stat.heapmsg,
-    "(unused) sysctl nub: kextlog.statistics.heapmsg"
+    "" /* sysctl nub: kextlog.statistics.heapmsg */
 )
 
 static SYSCTL_QUAD(
@@ -52,7 +52,7 @@ static SYSCTL_QUAD(
     stackmsg,
     CTLFLAG_RD,
     (uint64_t *) &log_stat.stackmsg,
-    "(unused) sysctl nub: kextlog.statistics.stackmsg"
+    "" /* sysctl nub: kextlog.statistics.stackmsg */
 )
 
 static SYSCTL_QUAD(
@@ -61,7 +61,7 @@ static SYSCTL_QUAD(
     toctou,
     CTLFLAG_RD,
     (uint64_t *) &log_stat.toctou,
-    "(unused) sysctl nub: kextlog.statistics.toctou"
+    "" /* sysctl nub: kextlog.statistics.toctou */
 )
 
 static SYSCTL_QUAD(
@@ -70,7 +70,7 @@ static SYSCTL_QUAD(
     oom,
     CTLFLAG_RD,
     (uint64_t *) &log_stat.oom,
-    "(unused) sysctl nub: kextlog.statistics.oom"
+    "" /* sysctl nub: kextlog.statistics.oom */
 )
 
 static SYSCTL_QUAD(
@@ -79,7 +79,7 @@ static SYSCTL_QUAD(
     enqueue_failure,
     CTLFLAG_RD,
     (uint64_t *) &log_stat.enqueue_failure,
-    "(unused) sysctl nub: kextlog.statistics.enqueue_failure"
+    "" /* sysctl nub: kextlog.statistics.enqueue_failure */
 )
 
 static struct sysctl_oid *sysctl_entries[] = {
@@ -101,8 +101,9 @@ void log_sysctl_register(void)
     size_t i;
     for (i = 0; i < ARRAY_SIZE(sysctl_entries); i++) {
         sysctl_register_oid(sysctl_entries[i]);
-        LOG_DBG("registered sysctl nub: %s", sysctl_entries[i]->oid_name);
     }
+
+    LOG_DBG("%zu sysctl entries registered", ARRAY_SIZE(sysctl_entries));
 }
 
 void log_sysctl_deregister(void)
@@ -112,10 +113,16 @@ void log_sysctl_deregister(void)
         if (sysctl_entries[i] != NULL) {
             /* Double sysctl_unregister_oid() call causes panic */
             sysctl_unregister_oid(sysctl_entries[i]);
-
-            LOG_DBG("deregistered sysctl nub: %s", sysctl_entries[i]->oid_name);
             sysctl_entries[i] = NULL;
+        } else {
+#ifdef DEBUG
+            while (++i < ARRAY_SIZE(sysctl_entries))
+                kassert(sysctl_entries[i] == NULL);
+#endif
+            return;
         }
     }
+
+    LOG_DBG("%zu sysctl entries deregistered", ARRAY_SIZE(sysctl_entries));
 }
 
