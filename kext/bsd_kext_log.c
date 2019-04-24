@@ -7,12 +7,15 @@
 #include "utils.h"
 #include "kauth.h"
 #include "log_kctl.h"
+#include "log_sysctl.h"
 
 kern_return_t bsd_kext_log_start(kmod_info_t *ki, void *d)
 {
     kern_return_t r;
 
     UNUSED(ki, d);
+
+    log_sysctl_register();
 
     r = kauth_register();
     if (r) goto out_exit;
@@ -32,6 +35,8 @@ kern_return_t bsd_kext_log_stop(kmod_info_t *ki, void *d)
     kern_return_t r;
 
     UNUSED(ki, d);
+
+    log_sysctl_deregister();
 
     kauth_deregister();
 
