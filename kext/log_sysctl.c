@@ -12,7 +12,7 @@ static SYSCTL_NODE(
     /* No parent */,
     OID_AUTO,
     kextlog,
-    CTLFLAG_RD | CTLFLAG_KERN,
+    CTLFLAG_RD,
     NULL,
     "(unused) root sysctl node: kextlog"
 )
@@ -21,7 +21,7 @@ static SYSCTL_NODE(
     _kextlog,
     OID_AUTO,
     statistics,
-    CTLFLAG_RD | CTLFLAG_KERN,
+    CTLFLAG_RD,
     NULL,
     "(unused) sysctl node: kextlog.statistics"
 )
@@ -32,7 +32,7 @@ static SYSCTL_QUAD(
     _kextlog_statistics,
     OID_AUTO,
     syslog,
-    CTLFLAG_RD | CTLFLAG_KERN,
+    CTLFLAG_RD,
     (uint64_t *) &log_stat.syslog,
     "(unused) sysctl nub: kextlog.statistics.syslog"
 )
@@ -41,7 +41,7 @@ static SYSCTL_QUAD(
     _kextlog_statistics,
     OID_AUTO,
     heapmsg,
-    CTLFLAG_RD | CTLFLAG_KERN,
+    CTLFLAG_RD,
     (uint64_t *) &log_stat.heapmsg,
     "(unused) sysctl nub: kextlog.statistics.heapmsg"
 )
@@ -50,7 +50,7 @@ static SYSCTL_QUAD(
     _kextlog_statistics,
     OID_AUTO,
     stackmsg,
-    CTLFLAG_RD | CTLFLAG_KERN,
+    CTLFLAG_RD,
     (uint64_t *) &log_stat.stackmsg,
     "(unused) sysctl nub: kextlog.statistics.stackmsg"
 )
@@ -59,7 +59,7 @@ static SYSCTL_QUAD(
     _kextlog_statistics,
     OID_AUTO,
     toctou,
-    CTLFLAG_RD | CTLFLAG_KERN,
+    CTLFLAG_RD,
     (uint64_t *) &log_stat.toctou,
     "(unused) sysctl nub: kextlog.statistics.toctou"
 )
@@ -68,7 +68,7 @@ static SYSCTL_QUAD(
     _kextlog_statistics,
     OID_AUTO,
     oom,
-    CTLFLAG_RD | CTLFLAG_KERN,
+    CTLFLAG_RD,
     (uint64_t *) &log_stat.oom,
     "(unused) sysctl nub: kextlog.statistics.oom"
 )
@@ -77,7 +77,7 @@ static SYSCTL_QUAD(
     _kextlog_statistics,
     OID_AUTO,
     enqueue_failure,
-    CTLFLAG_RD | CTLFLAG_KERN,
+    CTLFLAG_RD,
     (uint64_t *) &log_stat.enqueue_failure,
     "(unused) sysctl nub: kextlog.statistics.enqueue_failure"
 )
