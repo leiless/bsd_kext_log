@@ -117,7 +117,8 @@ void log_sysctl_deregister(void)
         } else {
 #ifdef DEBUG
             while (++i < ARRAY_SIZE(sysctl_entries))
-                kassert(sysctl_entries[i] == NULL);
+                kassertf(sysctl_entries[i] == NULL,
+                    "why sysctl entry at index %zu nonnull?!", i);
 #endif
             return;
         }
