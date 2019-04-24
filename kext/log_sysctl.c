@@ -96,6 +96,7 @@ void log_sysctl_register(void)
     size_t i;
     for (i = 0; i < ARRAY_SIZE(sysctl_entries); i++) {
         sysctl_register_oid(sysctl_entries[i]);
+        LOG_DBG("registered sysctl nub: %s", sysctl_entries[i]->oid_name);
     }
 }
 
@@ -106,6 +107,8 @@ void log_sysctl_deregister(void)
         if (sysctl_entries[i] != NULL) {
             /* Double sysctl_unregister_oid() call causes panic */
             sysctl_unregister_oid(sysctl_entries[i]);
+
+            LOG_DBG("deregistered sysctl nub: %s", sysctl_entries[i]->oid_name);
             sysctl_entries[i] = NULL;
         }
     }
