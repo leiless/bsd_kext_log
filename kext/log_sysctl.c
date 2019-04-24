@@ -82,7 +82,7 @@ static SYSCTL_QUAD(
     "(unused) sysctl nub: kextlog.statistics.enqueue_failure"
 )
 
-static struct sysctl_oid * const sysctl_entries[] = {
+static struct sysctl_oid *sysctl_entries[] = {
     &sysctl__kextlog_statistics_syslog,
     &sysctl__kextlog_statistics_heapmsg,
     &sysctl__kextlog_statistics_stackmsg,
@@ -103,7 +103,11 @@ void log_sysctl_deregister(void)
 {
     size_t i;
     for (i = 0; i < ARRAY_SIZE(sysctl_entries); i++) {
-        sysctl_unregister_oid(sysctl_entries[i]);
+        if (sysctl_entries[i] != NULL) {
+            /* Double sysctl_unregister_oid() call causes panic */
+            sysctl_unregister_oid(sysctl_entries[i]);
+            sysctl_entries[i] = NULL;
+        }
     }
 }
 
