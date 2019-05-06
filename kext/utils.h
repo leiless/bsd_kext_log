@@ -82,7 +82,8 @@
     (ex) ? (void) 0 : LOG_BUG("Assert `%s' failed: " fmt, #ex, ##__VA_ARGS__)
 #endif
 
-#define kassert_nonnull(ptr)    kassert(((void *) ptr) != NULL)
+#define kassert_nonnull(ptr)    kassert(ptr != NULL)
+#define kassert_null(ptr)       kassert(ptr == NULL)
 
 int kcb_get(void);
 int kcb_put(void);

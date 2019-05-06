@@ -7,7 +7,6 @@
 
 struct kextlog_statistics {
     volatile uint64_t syslog;
-    /* TODO: volatile uint64_t enqueued; */
     volatile uint64_t heapmsg;
     volatile uint64_t stackmsg;
     volatile uint64_t toctou;
