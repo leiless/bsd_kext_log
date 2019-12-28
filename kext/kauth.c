@@ -84,6 +84,7 @@ static int generic_scope_cb(
     char pcomm[MAXCOMLEN + 1];
 
     if (kcb_get() < 0) goto out_put;
+
     UNUSED(idata, arg0, arg1, arg2, arg3);
 
     uid = kauth_cred_getuid(cred);
@@ -116,6 +117,7 @@ static int process_scope_cb(
     int signal;
 
     if (kcb_get() < 0) goto out_put;
+
     UNUSED(idata, arg2, arg3);
 
     uid = kauth_cred_getuid(cred);
@@ -172,6 +174,7 @@ static int vnode_scope_cb(
     vnode_path_t vpath;
 
     if (kcb_get() < 0) goto out_put;
+
     UNUSED(idata, arg3);   /* XXX: TODO? */
 
     ctx = (vfs_context_t) arg0;
@@ -235,6 +238,7 @@ static int fileop_scope_cb(
     int flags;
 
     if (kcb_get() < 0) goto out_put;
+
     UNUSED(idata, arg3);
 
     uid = kauth_cred_getuid(cred);
@@ -329,7 +333,7 @@ static kauth_listener_t scope_ref[] = {
 
 kern_return_t kauth_register(void)
 {
-    kern_return_t r = 0;
+    kern_return_t r = KERN_SUCCESS;
     int i;
 
     BUILD_BUG_ON(ARRAY_SIZE(scope_name) != ARRAY_SIZE(scope_cb));
@@ -337,7 +341,6 @@ kern_return_t kauth_register(void)
 
     for (i = 0; i < (int) ARRAY_SIZE(scope_name); i++) {
         scope_ref[i] = kauth_listen_scope(scope_name[i], scope_cb[i], NULL);
-
         if (scope_ref[i] == NULL) {
             r = KERN_FAILURE;
             log_error("kauth_listen_scope() fail  scope: %s", scope_name[i]);
