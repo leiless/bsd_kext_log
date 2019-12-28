@@ -1,5 +1,7 @@
 /*
  * Created 190414 lynnl
+ *
+ * Exported header used both in kext and user space log daemon
  */
 
 #ifndef KEXTLOG_H
@@ -8,7 +10,7 @@
 #include <stdint.h>
 #include <sys/socket.h>
 
-#define KEXTLOG_KCTL_NAME           "net.trineo.kext.kctl.log"
+#define KEXTLOG_KCTL_NAME           "net.trineo.kext.bsd_kext_log.kctl"
 #define KEXTLOG_KCTL_SOCKTYPE       SOCK_DGRAM
 
 #define KEXTLOG_LEVEL_TRACE         0
