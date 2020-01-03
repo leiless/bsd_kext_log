@@ -41,6 +41,9 @@ kern_return_t bsd_kext_log_stop(kmod_info_t *ki, void *d)
     kauth_deregister();
 
     r = log_kctl_deregister();
+    if (r == KERN_SUCCESS) {
+        util_massert();
+    }
 
     return r;
 }
