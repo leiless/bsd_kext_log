@@ -56,9 +56,11 @@
 #define LOG_DBG(fmt, ...)    LOG_OFF(fmt, ##__VA_ARGS__)
 #endif
 
-#define panicf(fmt, ...)                \
-    panic("\n" fmt "\n%s@%s#L%d\n\n",   \
-            ##__VA_ARGS__, __BASE_FILE__, __FUNCTION__, __LINE__)
+#define panicf(fmt, ...) ({                                     \
+    panic("\n" fmt "\n%s@%s()#%d\n\n",                          \
+        ##__VA_ARGS__, __BASE_FILE__, __func__, __LINE__);      \
+    __builtin_unreachable();                                    \
+})
 
 #ifdef DEBUG
 /*

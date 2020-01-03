@@ -18,6 +18,7 @@ include_directories("${SDKROOT}/System/Library/Frameworks/Kernel.framework/Heade
 
 add_compile_options(-Wall -Wextra -Wno-unused-function -Werror)
 add_compile_options(-x c -std=c99 -nostdinc -fno-builtin -fno-common -mkernel)
+add_compile_options(-DDEBUG)
 
 add_library(
     bsd_kext_log

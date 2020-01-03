@@ -5,7 +5,6 @@
 #include <sys/sysctl.h>
 
 #include "log_sysctl.h"
-#include "log_kctl.h"
 #include "utils.h"
 
 static SYSCTL_NODE(
