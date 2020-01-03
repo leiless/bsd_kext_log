@@ -14,6 +14,15 @@
 #include "utils.h"
 #include "log_kctl.h"
 
+static inline const char *vtype_string(enum vtype vt)
+{
+    static const char *vtypes[] = {
+            "VNON", "VREG", "VDIR", "VBLK", "VCHR", "VLNK",
+            "VSOCK", "VFIFO", "VBAD", "VSTR", "VCPLX",
+    };
+    return vt < ARRAY_SIZE(vtypes) ? vtypes[vt] : "(?)";
+}
+
 typedef struct {
     errno_t e;
     int len;        /* strlen(path) */
@@ -70,6 +79,15 @@ out_exit:
     return (vnode_path_t) {e, len, path};
 }
 
+static inline const char *generic_action_str(kauth_action_t act)
+{
+    switch (act) {
+    case KAUTH_GENERIC_ISSUSER:
+        return "ISSUSER";
+    }
+    return "(?)";
+}
+
 static int generic_scope_cb(
         kauth_cred_t cred,
         void *idata,
@@ -91,11 +109,23 @@ static int generic_scope_cb(
     pid = proc_selfpid();
     proc_selfname(pcomm, sizeof(pcomm));
 
-    log_info("generic  act: %#x uid: %u pid: %d %s", act, uid, pid, pcomm);
+    log_info("generic  act: %#x(%s) uid: %u pid: %d %s",
+             act, generic_action_str(act), uid, pid, pcomm);
 
 out_put:
     (void) kcb_put();
     return KAUTH_RESULT_DEFER;
+}
+
+static inline const char *process_action_str(kauth_action_t act)
+{
+    switch (act) {
+    case KAUTH_PROCESS_CANSIGNAL:
+        return "CANSIGNAL";
+    case KAUTH_PROCESS_CANTRACE:
+        return "CANTRACE";
+    }
+    return "(?)";
 }
 
 static int process_scope_cb(
@@ -125,23 +155,23 @@ static int process_scope_cb(
     proc_selfname(pcomm, sizeof(pcomm));
 
     switch (act) {
-    case KAUTH_PROCESS_CANTRACE:
-        proc = (proc_t) arg0;
-        pid2 = proc_pid(proc);
-        proc_name(pid2, pcomm2, sizeof(pcomm2));
-
-        log_info("process  act: %#x(can_trace) uid: %u pid: %d %s dst: %d %s",
-                    act, uid, pid, pcomm, pid2, pcomm2);
-        break;
-
     case KAUTH_PROCESS_CANSIGNAL:
         proc = (proc_t) arg0;
         signal = (int) arg1;
         pid2 = proc_pid(proc);
         proc_name(pid2, pcomm2, sizeof(pcomm2));
 
-        log_info("process  act: %#x(can_signal) uid: %u pid: %d %s dst: %d %s sig: %d",
-                    act, uid, pid, pcomm, pid2, pcomm2, signal);
+        log_info("process  act: %#x(%s) uid: %u pid: %d %s dst: %d %s sig: %d",
+                act, process_action_str(act), uid, pid, pcomm, pid2, pcomm2, signal);
+        break;
+
+    case KAUTH_PROCESS_CANTRACE:
+        proc = (proc_t) arg0;
+        pid2 = proc_pid(proc);
+        proc_name(pid2, pcomm2, sizeof(pcomm2));
+
+        log_warning("process  act: %#x(%s) uid: %u pid: %d %s dst: %d %s",
+                act, process_action_str(act), uid, pid, pcomm, pid2, pcomm2);
         break;
 
     default:
@@ -152,6 +182,145 @@ static int process_scope_cb(
 out_put:
     (void) kcb_put();
     return KAUTH_RESULT_DEFER;
+}
+
+#define GET_TYPE_STR     0
+#define GET_TYPE_LEN     1
+
+static inline void *vn_act_str_one(
+        int type,
+        kauth_action_t a,
+        bool isdir)
+{
+    char *p;
+
+    kassertf(type >= GET_TYPE_STR && type <= GET_TYPE_LEN, "Bad type %#x", type);
+    kassert_ne(a, 0, "%d", "%d");
+    kassertf((a & (a - 1)) == 0, "Only one bit should be set, got %#x", a);
+
+    switch (a) {
+    case KAUTH_VNODE_READ_DATA:
+        BUILD_BUG_ON(KAUTH_VNODE_READ_DATA != KAUTH_VNODE_LIST_DIRECTORY);
+        p = isdir ? "LIST_DIRECTORY" : "READ_DATA";
+        break;
+    case KAUTH_VNODE_WRITE_DATA:
+        BUILD_BUG_ON(KAUTH_VNODE_WRITE_DATA != KAUTH_VNODE_ADD_FILE);
+        p = isdir ? "ADD_FILE" : "WRITE_DATA";
+        break;
+    case KAUTH_VNODE_EXECUTE:
+        BUILD_BUG_ON(KAUTH_VNODE_EXECUTE != KAUTH_VNODE_SEARCH);
+        p = isdir ? "SEARCH" : "EXECUTE";
+        break;
+    case KAUTH_VNODE_DELETE:
+        p = "DELETE";
+        break;
+    case KAUTH_VNODE_APPEND_DATA:
+        BUILD_BUG_ON(KAUTH_VNODE_APPEND_DATA != KAUTH_VNODE_ADD_SUBDIRECTORY);
+        p = isdir ? "ADD_SUBDIRECTORY" : "APPEND_DATA";
+        break;
+    case KAUTH_VNODE_DELETE_CHILD:
+        p = "DELETE_CHILD";
+        break;
+    case KAUTH_VNODE_READ_ATTRIBUTES:
+        p = "READ_ATTRIBUTES";
+        break;
+    case KAUTH_VNODE_WRITE_ATTRIBUTES:
+        p = "WRITE_ATTRIBUTES";
+        break;
+    case KAUTH_VNODE_READ_EXTATTRIBUTES:
+        p = "READ_EXTATTRIBUTES";
+        break;
+    case KAUTH_VNODE_WRITE_EXTATTRIBUTES:
+        p = "WRITE_EXTATTRIBUTES";
+        break;
+    case KAUTH_VNODE_READ_SECURITY:
+        p = "READ_SECURITY";
+        break;
+    case KAUTH_VNODE_WRITE_SECURITY:
+        p = "WRITE_SECURITY";
+        break;
+    case KAUTH_VNODE_TAKE_OWNERSHIP:
+        BUILD_BUG_ON(KAUTH_VNODE_TAKE_OWNERSHIP != KAUTH_VNODE_CHANGE_OWNER);
+        p = "TAKE_OWNERSHIP";
+        break;
+    case KAUTH_VNODE_SYNCHRONIZE:
+        p = "SYNCHRONIZE";
+        break;
+    case KAUTH_VNODE_LINKTARGET:
+        p = "LINKTARGET";
+        break;
+    case KAUTH_VNODE_CHECKIMMUTABLE:
+        p = "CHECKIMMUTABLE";
+        break;
+    case KAUTH_VNODE_ACCESS:
+        p = "ACCESS";
+        break;
+    case KAUTH_VNODE_NOIMMUTABLE:
+        p = "NOIMMUTABLE";
+        break;
+    case KAUTH_VNODE_SEARCHBYANYONE:
+        p = "SEARCHBYANYONE";
+        break;
+    default:
+        /* Fallback: use question mark for unrecognized bit */
+        p = "?";
+        break;
+    }
+
+    return type == GET_TYPE_STR ? p : (void *) strlen(p);
+}
+
+static inline int ffs_zero(int x)
+{
+    kassert_ne(x, 0, "%d", "%d");
+    return __builtin_ffs(x) - 1;
+}
+
+/**
+ * Format vnode action into string
+ * @action      The vnode action
+ * @return      String to describe all bits in action
+ *              NULL if OOM
+ *              You're responsible to free the space via util_mfree()
+ */
+static inline char * __nullable vn_act_str(kauth_action_t act, vnode_t vp)
+{
+    kauth_action_t a;
+    bool isdir;
+    int i, n, size;
+    char *str;
+
+    kassert_nonnull(vp);
+
+    isdir = vnode_isdir(vp);
+
+    a = act;
+    size = 1;
+    while (a != 0) {
+        size += (int) vn_act_str_one(GET_TYPE_LEN, 1 << ffs_zero(a), isdir);
+        a &= a - 1;
+        if (a != 0) size++;    /* Add a pipe separator */
+    }
+
+    str = util_malloc0(size, M_WAITOK | M_NULL);
+    if (str == NULL) goto out_exit;
+
+    a = act;
+    i = 0;
+    while (a != 0) {
+        n = snprintf(str + i, size - i, "%s", vn_act_str_one(GET_TYPE_STR, 1 << ffs_zero(a), isdir));
+        kassert_gt(n, 0, "%d", "%d");
+        i += n;
+        a &= a - 1;
+        if (a != 0) str[i++] = '|';
+    }
+
+    /* In case act is zero, we have to terminate the string manually */
+    if (size == 1) *str = '\0';
+    kassert_eq(i + 1, size, "%d", "%d");
+    kassert_eq(str[i], '\0', "%#x", "%#x");
+    out_exit:
+    return str;
 }
 
 static int vnode_scope_cb(
@@ -170,6 +339,8 @@ static int vnode_scope_cb(
     uid_t uid;
     int pid;
     char pcomm[MAXCOMLEN + 1];
+    char *str;
+    enum vtype vt;
 
     vnode_path_t vpath;
 
@@ -187,19 +358,48 @@ static int vnode_scope_cb(
     proc_selfname(pcomm, sizeof(pcomm));
 
     vpath = make_vnode_path(vp);
+    vt = vnode_vtype(vp);
     if (vpath.e != 0) {
         log_error("make_vnode_path() fail  vp: %p vid: %#x vt: %d",
                     vp, vnode_vid(vp), vnode_vtype(vp));
         goto out_put;
     }
 
-    log_info("vnode  act: %#x dvp: %p vp: %p %d %s uid: %u pid: %d %s",
-                act, dvp, vp, vnode_vtype(vp), vpath.path, uid, pid, pcomm);
+    str = vn_act_str(act, vp);
+    log_info("vnode  act: %#x(%s) vp: %p %d %s %s dvp: %p uid: %u pid: %d %s",
+          act, str, vp, vt, vtype_string(vt), vpath.path, dvp, uid, pid, pcomm);
+    util_mfree(str);
 
     _FREE(vpath.path, M_TEMP);
 out_put:
     (void) kcb_put();
     return KAUTH_RESULT_DEFER;
+}
+
+static inline const char *fileop_action_str(kauth_action_t act)
+{
+    switch (act) {
+    case KAUTH_FILEOP_OPEN:
+        return "OPEN";
+    case KAUTH_FILEOP_CLOSE:
+        return "CLOSE";
+    case KAUTH_FILEOP_RENAME:
+        return "RENAME";
+    case KAUTH_FILEOP_EXCHANGE:
+        return "EXCHANGE";
+    case KAUTH_FILEOP_LINK:
+        return "LINK";
+    case KAUTH_FILEOP_EXEC:
+        return "EXEC";
+    case KAUTH_FILEOP_DELETE:
+        return "DELETE";
+#if OS_VER_MIN_REQ >= __MAC_10_14
+    /* First introduced in macOS 10.14 */
+    case KAUTH_FILEOP_WILL_RENAME:
+        return "WILL_RENAME";
+#endif
+    }
+    return "?";
 }
 
 /*
@@ -250,8 +450,8 @@ static int fileop_scope_cb(
         vp = (vnode_t) arg0;
         path1 = (char *) arg1;
 
-        log_info("fileop  act: %#x(open) vp: %p %d %s uid: %u pid: %d %s",
-                    act, vp, vnode_vtype(vp), path1, uid, pid, pcomm);
+        log_info("fileop  act: %#x(%s) vp: %p %d %s uid: %u pid: %d %s",
+                act, fileop_action_str(act), vp, vnode_vtype(vp), path1, uid, pid, pcomm);
         break;
 
     case KAUTH_FILEOP_CLOSE:
@@ -259,48 +459,48 @@ static int fileop_scope_cb(
         path1 = (char *) arg1;
         flags = (int) arg2;
 
-        log_info("fileop  act: %#x(close) vp: %p %d %s flags: %#x uid: %u pid: %d %s",
-                    act, vp, vnode_vtype(vp), path1, flags, uid, pid, pcomm);
+        log_info("fileop  act: %#x(%s) vp: %p %d %s flags: %#x uid: %u pid: %d %s",
+                act, fileop_action_str(act), vp, vnode_vtype(vp), path1, flags, uid, pid, pcomm);
         break;
 
     case KAUTH_FILEOP_RENAME:
         path1 = (char * _Nullable) arg0;
         path2 = (char * _Nullable) arg1;
 
-        log_info("fileop  act: %#x(rename) %s -> %s uid: %u pid: %d %s",
-                    act, path1, path2, uid, pid, pcomm);
+        log_info("fileop  act: %#x(%s) %s -> %s uid: %u pid: %d %s",
+                act, fileop_action_str(act), path1, path2, uid, pid, pcomm);
         break;
 
     case KAUTH_FILEOP_EXCHANGE:
         path1 = (char *) arg0;
         path2 = (char *) arg1;
 
-        log_info("fileop  act: %#x(xchg) %s <=> %s uid: %u pid: %d %s",
-                    act, path1, path2, uid, pid, pcomm);
+        log_info("fileop  act: %#x(%s) %s <=> %s uid: %u pid: %d %s",
+                act, fileop_action_str(act), path1, path2, uid, pid, pcomm);
         break;
 
     case KAUTH_FILEOP_LINK:
         path1 = (char * _Nullable) arg0;
         path2 = (char * _Nullable) arg1;
 
-        log_info("fileop  act: %#x(link) %s ~> %s uid: %u pid: %d %s",
-                    act, path1, path2, uid, pid, pcomm);
+        log_info("fileop  act: %#x(%s) %s ~> %s uid: %u pid: %d %s",
+                act, fileop_action_str(act), path1, path2, uid, pid, pcomm);
         break;
 
     case KAUTH_FILEOP_EXEC:
         vp = (vnode_t) arg0;
         path1 = (char * _Nullable) arg1;
 
-        log_info("fileop  act: %#x(exec) vp: %p %d %s uid: %u pid: %d %s",
-                    act, vp, vnode_vtype(vp), path1, uid, pid, pcomm);
+        log_info("fileop  act: %#x(%s) vp: %p %d %s uid: %u pid: %d %s",
+                act, fileop_action_str(act), vp, vnode_vtype(vp), path1, uid, pid, pcomm);
         break;
 
     case KAUTH_FILEOP_DELETE:
         vp = (vnode_t) arg0;
         path1 = (char *) arg1;
 
-        log_info("fileop  act: %#x(del) vp: %p %d %s uid: %u pid: %d %s",
-                    act, vp, vnode_vtype(vp), path1, uid, pid, pcomm);
+        log_info("fileop  act: %#x(%s) vp: %p %d %s uid: %u pid: %d %s",
+                act, fileop_action_str(act), vp, vnode_vtype(vp), path1, uid, pid, pcomm);
         break;
 
 #if OS_VER_MIN_REQ >= __MAC_10_14
@@ -310,8 +510,8 @@ static int fileop_scope_cb(
         path1 = (char *) arg1;
         path2 = (char *) arg2;
 
-        log_info("fileop  act: %#x(will_rename) vp: %p %d %s -> %s uid: %u pid: %d %s",
-              act, vp, vnode_vtype(vp), path1, path2, uid, pid, pcomm);
+        log_info("fileop  act: %#x(%s) vp: %p %d %s -> %s uid: %u pid: %d %s",
+                act, fileop_action_str(act), vp, vnode_vtype(vp), path1, path2, uid, pid, pcomm);
         break;
 #endif
 

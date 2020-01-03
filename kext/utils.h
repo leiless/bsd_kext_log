@@ -88,10 +88,32 @@
 #define kassert_nonnull(ptr)    kassert(ptr != NULL)
 #define kassert_null(ptr)       kassert(ptr == NULL)
 
+#define __kassert_cmp(v1, v2, f1, f2, op)   \
+    kassertf((v1) op (v2), "left: " f1 " right: " f2, (v1), (v2))
+
+#define kassert_eq(v1, v2, f1, f2)  __kassert_cmp(v1, v2, f1, f2, ==)
+#define kassert_ne(v1, v2, f1, f2)  __kassert_cmp(v1, v2, f1, f2, !=)
+#define kassert_le(v1, v2, f1, f2)  __kassert_cmp(v1, v2, f1, f2, <=)
+#define kassert_ge(v1, v2, f1, f2)  __kassert_cmp(v1, v2, f1, f2, >=)
+#define kassert_lt(v1, v2, f1, f2)  __kassert_cmp(v1, v2, f1, f2, <)
+#define kassert_gt(v1, v2, f1, f2)  __kassert_cmp(v1, v2, f1, f2, >)
+
+/**
+ * Branch predictions
+ * see: linux/include/linux/compiler.h
+ */
+#define likely(x)               __builtin_expect(!!(x), 1)
+#define unlikely(x)             __builtin_expect(!!(x), 0)
+
 int kcb_get(void);
 int kcb_put(void);
 int kcb_read(void);
 void kcb_invalidate(void);
+
+void * __nullable util_malloc0(size_t, int);
+void * __nullable util_malloc(size_t);
+void util_mfree(void * __nullable);
+void util_massert(void);
 
 #endif /* UTILS_H */
 

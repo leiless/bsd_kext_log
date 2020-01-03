@@ -5,6 +5,7 @@
 #include <sys/time.h>
 #include <sys/proc.h>           /* msleep() */
 #include <libkern/OSAtomic.h>
+#include <sys/malloc.h>
 
 #include "utils.h"
 
@@ -90,5 +91,50 @@ int kcb_read(void)
 void kcb_invalidate(void)
 {
     (void) kcb(KCB_OPT_INVALIDATE);
+}
+
+static void util_mstat(int opt)
+{
+    static volatile SInt64 cnt = 0;
+    switch (opt) {
+    case 0:
+        if (OSDecrementAtomic64(&cnt) > 0) return;
+        break;
+    case 1:
+        if (OSIncrementAtomic64(&cnt) >= 0) return;
+        break;
+    case 2:
+        if (cnt == 0) return;
+        break;
+    }
+    panicf("FIXME: potential memleak  opt: %d cnt: %lld", opt, cnt);
+}
+
+/* Zero size allocation will return a NULL */
+void * __nullable util_malloc0(size_t size, int flags)
+{
+    /* _MALLOC `type' parameter is a joke */
+    void *addr = _MALLOC(size, M_TEMP, flags);
+    if (likely(addr != NULL)) util_mstat(1);
+    return addr;
+}
+
+void * __nullable util_malloc(size_t size)
+{
+    return util_malloc0(size, M_NOWAIT);
+}
+
+void util_mfree(void * __nullable addr)
+{
+    if (addr != NULL) {
+        _FREE(addr, M_TEMP);
+        util_mstat(0);
+    }
+}
+
+/* XXX: call when all memory freed */
+void util_massert(void)
+{
+    util_mstat(2);
 }
 
