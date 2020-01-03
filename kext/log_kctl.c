@@ -242,7 +242,7 @@ out_again:
     }
 
     if (len >= (int) sizeof(msg.buffer)) {
-        msgp = (struct kextlog_msghdr *) _MALLOC(msgsz, M_TEMP, M_NOWAIT);
+        msgp = (struct kextlog_msghdr *) util_malloc0(msgsz, M_WAITOK | M_NULL);
         if (msgp != NULL) {
             va_start(ap, fmt);
             len2 = vsnprintf(msgp->buffer, len + 1, fmt, ap);
@@ -253,7 +253,7 @@ out_again:
 
                 /* TOCTOU: Some arguments got modified in the interim */
                 LOG_WARN("TOCTOU bug  old: %d vs new :%d", len, len2);
-                _FREE(msgp, M_TEMP);
+                util_mfree(msgp);
                 goto out_again;
             } else {
                 len = len2;
@@ -291,8 +291,8 @@ out_sysmbuf:
     }
 
     if (msgp != (struct kextlog_msghdr *) &msg) {
-        /* _FREE(NULL, type) do nop */
-        _FREE(msgp, M_TEMP);
+        /* util_mfree(NULL, type) do nop */
+        util_mfree(msgp);
     }
 }
 

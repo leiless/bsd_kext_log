@@ -52,7 +52,7 @@ static vnode_path_t make_vnode_path(vnode_t vp)
      * References:
      *  developer.apple.com/legacy/library/technotes/tn/tn1150.html#Symlinks
      */
-    path = (char *) _MALLOC(PATH_MAX, M_TEMP, M_NOWAIT);
+    path = (char *) util_malloc0(PATH_MAX, M_WAITOK | M_NULL);
     if (path == NULL) {
         e = ENOMEM;
         goto out_exit;
@@ -71,7 +71,7 @@ static vnode_path_t make_vnode_path(vnode_t vp)
         kassertf(len > 0, "non-positive len %d", len);
         len--;      /* Don't count trailing '\0' */
     } else {
-        _FREE(path, M_TEMP);
+        util_mfree(path);
         path = NULL;
     }
 
@@ -369,8 +369,8 @@ static int vnode_scope_cb(
     log_info("vnode  act: %#x(%s) vp: %p %d %s %s dvp: %p uid: %u pid: %d %s",
           act, str, vp, vt, vtype_string(vt), vpath.path, dvp, uid, pid, pcomm);
     util_mfree(str);
+    util_mfree(vpath.path);
 
-    _FREE(vpath.path, M_TEMP);
 out_put:
     (void) kcb_put();
     return KAUTH_RESULT_DEFER;
