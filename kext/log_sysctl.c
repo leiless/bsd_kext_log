@@ -113,16 +113,8 @@ void log_sysctl_deregister(void)
             /* Double sysctl_unregister_oid() call causes panic */
             sysctl_unregister_oid(sysctl_entries[i]);
             sysctl_entries[i] = NULL;
-        } else {
-#ifdef DEBUG
-            while (++i < ARRAY_SIZE(sysctl_entries))
-                kassertf(sysctl_entries[i] == NULL,
-                    "why sysctl entry at index %zu nonnull?!", i);
-#endif
-            return;
         }
     }
-
     LOG_DBG("%zu sysctl entries deregistered", ARRAY_SIZE(sysctl_entries));
 }
 

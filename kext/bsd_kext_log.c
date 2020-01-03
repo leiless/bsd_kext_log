@@ -36,12 +36,10 @@ kern_return_t bsd_kext_log_stop(kmod_info_t *ki, void *d)
 
     UNUSED(ki, d);
 
-    log_sysctl_deregister();
-
-    kauth_deregister();
-
     r = log_kctl_deregister();
     if (r == KERN_SUCCESS) {
+        kauth_deregister();
+        log_sysctl_deregister();
         util_massert();
     }
 
