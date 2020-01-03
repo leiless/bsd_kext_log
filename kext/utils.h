@@ -7,6 +7,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <libkern/libkern.h>    /* printf() */
 #include <kern/debug.h>
 
 #ifndef __kext_makefile__
