@@ -57,15 +57,6 @@ static SYSCTL_QUAD(
 static SYSCTL_QUAD(
     _kextlog_statistics,
     OID_AUTO,
-    toctou,
-    CTLFLAG_RD,
-    (uint64_t *) &log_stat.toctou,
-    "" /* sysctl nub: kextlog.statistics.toctou */
-)
-
-static SYSCTL_QUAD(
-    _kextlog_statistics,
-    OID_AUTO,
     oom,
     CTLFLAG_RD,
     (uint64_t *) &log_stat.oom,
@@ -90,7 +81,6 @@ static struct sysctl_oid *sysctl_entries[] = {
     &sysctl__kextlog_statistics_syslog,
     &sysctl__kextlog_statistics_heapmsg,
     &sysctl__kextlog_statistics_stackmsg,
-    &sysctl__kextlog_statistics_toctou,
     &sysctl__kextlog_statistics_oom,
     &sysctl__kextlog_statistics_enqueue_failure,
 };
