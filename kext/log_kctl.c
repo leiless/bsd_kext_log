@@ -216,7 +216,6 @@ void log_printf(uint32_t level, const char *fmt, ...)
     kassertf(level >= KEXTLOG_LEVEL_TRACE && level <= KEXTLOG_LEVEL_ERROR, "Bad log level %u", level);
     kassert_nonnull(fmt);
 
-out_again:
     msgp = (struct kextlog_msghdr *) &msg;
 
     /* Push message to syslog if log kctl not yet ready */
@@ -233,6 +232,7 @@ out_again:
     len = vsnprintf(msg.buffer, sizeof(msg.buffer), fmt, ap);
     va_end(ap);
 
+    /* msgsz = sizeof(*msgp) + len + 1; */
     if (__builtin_uadd_overflow(sizeof(*msgp), len, &msgsz) ||
         /* Includes log message trailing `\0' */
         __builtin_uadd_overflow(msgsz, 1, &msgsz)) {
@@ -248,17 +248,7 @@ out_again:
             len2 = vsnprintf(msgp->buffer, len + 1, fmt, ap);
             va_end(ap);
 
-            if (len < len2) {
-                (void) OSIncrementAtomic64((SInt64 *) &log_stat.toctou);
-
-                /* TOCTOU: Some arguments got modified in the interim */
-                LOG_WARN("TOCTOU bug  old: %d vs new :%d", len, len2);
-                util_mfree(msgp);
-                goto out_again;
-            } else {
-                len = len2;
-            }
-
+            kassert_eq(len, len2, "%d", "%d");
             (void) OSIncrementAtomic64((SInt64 *) &log_stat.heapmsg);
         } else {
             (void) OSIncrementAtomic64((SInt64 *) &log_stat.oom);
