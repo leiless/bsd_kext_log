@@ -118,7 +118,7 @@ kern_return_t log_kctl_deregister(void)
  * Print message to system message buffer(last resort)
  * The message may truncated if it's far too large
  */
-static inline void log_sysmbuf(uint32_t level, const char *fmt, va_list ap)
+static inline void log_syslog(uint32_t level, const char *fmt, va_list ap)
 {
     static char buf[MSG_BUFSZ];
     static volatile uint32_t spin_lock = 0;
@@ -148,7 +148,6 @@ static inline void log_sysmbuf(uint32_t level, const char *fmt, va_list ap)
         break;
     default:
         panicf("unswitched log level %u", level);
-        __builtin_unreachable();
     }
 
     ok = OSCompareAndSwap(1, 0, &spin_lock);
@@ -276,7 +275,7 @@ out_sysmbuf:
         (void) OSIncrementAtomic64((SInt64 *) &log_stat.syslog);
 
         va_start(ap, fmt);
-        log_sysmbuf(level, fmt, ap);
+        log_syslog(level, fmt, ap);
         va_end(ap);
     }
 

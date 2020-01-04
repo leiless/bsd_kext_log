@@ -50,7 +50,6 @@ static inline int kcb(int opt)
 
     default:
         panicf("invalid option  opt: %d i: %d", opt, i);
-        __builtin_unreachable();
     }
 
     return rd;
