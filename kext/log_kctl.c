@@ -8,6 +8,7 @@
 #include <sys/kern_control.h>
 #include <libkern/OSAtomic.h>
 #include <mach/mach_time.h>
+#include <sys/vm.h>
 
 #include "log_kctl.h"
 #include "utils.h"
@@ -262,6 +263,8 @@ out_overflow:
         (void) OSIncrementAtomic64((SInt64 *) &log_stat.stackmsg);
     }
 
+    msgp->pid = proc_pid(current_proc());
+    msgp->tid = thread_tid(current_thread());
     msgp->timestamp = mach_absolute_time();
     msgp->level = level;
     msgp->flags = flags;

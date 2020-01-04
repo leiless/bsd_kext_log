@@ -28,6 +28,9 @@
 #define _KEXTLOG_PADDING_MAGIC      0x65636166  /* Little-endian 'face' */
 
 struct kextlog_msghdr {
+    int32_t pid;
+    uint64_t tid;
+
     uint64_t timestamp;     /* always be mach_absolute_time() */
     uint32_t level;
     uint32_t flags;

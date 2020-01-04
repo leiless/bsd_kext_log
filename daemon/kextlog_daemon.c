@@ -133,8 +133,8 @@ static void read_log_from_kctl(int fd)
         for (i = 0, concur = 0; i + (ssize_t) sizeof(*m) <= n; i += sizeof(*m) + m->size, concur++) {
             m = (struct kextlog_msghdr *) (buffer + i);
 
-            LOG("[%zd:%zd]  ts: %#llx level: %u flags: %#3x sz: %u",
-                concur, i, m->timestamp, m->level, m->flags, m->size);
+            LOG("[%zd:%zd]  pid: %d tid: %#llx ts: %#llx level: %u flags: %#x sz: %u",
+                concur, i, m->pid, m->tid, m->timestamp, m->level, m->flags, m->size);
 
             if (i + (ssize_t) (sizeof(*m) + m->size) > n) {
                 LOG_WARN("message body(%u bytes) incomplete  n: %zd", m->size, n);
