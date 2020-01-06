@@ -552,7 +552,10 @@ kern_return_t kauth_register(void)
     BUILD_BUG_ON(ARRAY_SIZE(scope_name) != ARRAY_SIZE(scope_ref));
 
     for (i = 0; i < (int) ARRAY_SIZE(scope_name); i++) {
+        SUPPRESS_WARN_DEPRECATED_DECL_BEGIN
         scope_ref[i] = kauth_listen_scope(scope_name[i], scope_cb[i], NULL);
+        SUPPRESS_WARN_DEPRECATED_DECL_END
+
         if (scope_ref[i] == NULL) {
             r = KERN_FAILURE;
             log_error("kauth_listen_scope() fail  scope: %s", scope_name[i]);
@@ -570,7 +573,10 @@ void kauth_deregister(void)
 
     for (i = 0; i < (int) ARRAY_SIZE(scope_name); i++) {
         if (scope_ref[i] != NULL) {
+            SUPPRESS_WARN_DEPRECATED_DECL_BEGIN
             kauth_unlisten_scope(scope_ref[i]);
+            SUPPRESS_WARN_DEPRECATED_DECL_END
+
             scope_ref[i] = NULL;
         }
     }

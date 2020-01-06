@@ -32,6 +32,14 @@
 #define BUILD_BUG_ON(cond)      UNUSED(cond)
 #endif
 
+/* XXX: ONLY quote those deprecated functions */
+#define SUPPRESS_WARN_DEPRECATED_DECL_BEGIN     \
+    _Pragma("clang diagnostic push")            \
+    _Pragma("clang diagnostic ignored \"-Wdeprecated-declarations\"")
+
+#define SUPPRESS_WARN_DEPRECATED_DECL_END       \
+    _Pragma("clang diagnostic pop")
+
 /**
  * os_log() is only available on macOS 10.12 or newer
  *  thus os_log do have compatibility issue  use printf instead

@@ -34,7 +34,7 @@ static SYSCTL_QUAD(
     CTLFLAG_RD,
     (uint64_t *) &log_stat.syslog,
     "" /* sysctl nub: kextlog.statistics.syslog */
-)
+);
 
 static SYSCTL_QUAD(
     _kextlog_statistics,
@@ -43,7 +43,7 @@ static SYSCTL_QUAD(
     CTLFLAG_RD,
     (uint64_t *) &log_stat.heapmsg,
     "" /* sysctl nub: kextlog.statistics.heapmsg */
-)
+);
 
 static SYSCTL_QUAD(
     _kextlog_statistics,
@@ -52,7 +52,7 @@ static SYSCTL_QUAD(
     CTLFLAG_RD,
     (uint64_t *) &log_stat.stackmsg,
     "" /* sysctl nub: kextlog.statistics.stackmsg */
-)
+);
 
 static SYSCTL_QUAD(
     _kextlog_statistics,
@@ -61,7 +61,7 @@ static SYSCTL_QUAD(
     CTLFLAG_RD,
     (uint64_t *) &log_stat.oom,
     "" /* sysctl nub: kextlog.statistics.oom */
-)
+);
 
 static SYSCTL_QUAD(
     _kextlog_statistics,
@@ -70,7 +70,7 @@ static SYSCTL_QUAD(
     CTLFLAG_RD,
     (uint64_t *) &log_stat.enqueue_failure,
     "" /* sysctl nub: kextlog.statistics.enqueue_failure */
-)
+);
 
 static struct sysctl_oid *sysctl_entries[] = {
     /* sysctl nodes */
